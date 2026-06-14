@@ -90,12 +90,26 @@
                     @if($options->isNotEmpty())
                         <div>
                             <p class="font-bold text-sm uppercase text-gray-500 mb-2">{{ $attribute->name }}</p>
-                            <select name="attr[{{ $attribute->slug }}]" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
-                                <option value="">Qualquer</option>
+                            <div class="flex flex-wrap gap-2">
+                                <label class="cursor-pointer">
+                                    <input type="radio" name="attr[{{ $attribute->slug }}]" value=""
+                                           @checked(!request('attr.' . $attribute->slug))
+                                           class="peer sr-only">
+                                    <span class="inline-block px-3 py-1.5 text-xs font-semibold rounded-lg border border-gray-300 bg-white text-gray-700 peer-checked:bg-brand-600 peer-checked:text-white peer-checked:border-brand-600 hover:bg-gray-50 transition">
+                                        Todos
+                                    </span>
+                                </label>
                                 @foreach($options as $option)
-                                    <option value="{{ $option }}" @selected(request('attr.' . $attribute->slug) === $option)>{{ $option }}{{ $attribute->unit ? ' ' . $attribute->unit : '' }}</option>
+                                    <label class="cursor-pointer">
+                                        <input type="radio" name="attr[{{ $attribute->slug }}]" value="{{ $option }}"
+                                               @checked(request('attr.' . $attribute->slug) === $option)
+                                               class="peer sr-only">
+                                        <span class="inline-block px-3 py-1.5 text-xs font-semibold rounded-lg border border-gray-300 bg-white text-gray-700 peer-checked:bg-brand-600 peer-checked:text-white peer-checked:border-brand-600 hover:bg-gray-50 transition">
+                                            {{ $option }}{{ $attribute->unit ? ' ' . $attribute->unit : '' }}
+                                        </span>
+                                    </label>
                                 @endforeach
-                            </select>
+                            </div>
                         </div>
                     @endif
                 @endforeach
