@@ -70,11 +70,14 @@ jobs:
             # (Elas já foram compactadas juntas no tar.gz, mas rodamos install para garantir dump-autoload correto)
             composer install --no-dev --optimize-autoloader
             
-            # 4. Executa migrações do banco e otimiza cache
+            # 4. Garante o symlink de storage (imagens enviadas pelo /admin)
+            php artisan storage:link
+
+            # 5. Executa migrações do banco e otimiza cache
             php artisan migrate --force
             php artisan optimize:clear
             php artisan optimize
             php artisan filament:optimize
             
-            # 5. Remove o arquivo compactado temporário
+            # 6. Remove o arquivo compactado temporário
             rm ../release.tar.gz
