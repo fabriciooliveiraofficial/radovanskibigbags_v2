@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 960" role="img" aria-label="Radovanski Big Bags">
+  <!-- Arco inferior (tigela) -->
+  <path d="M 60 380
+           A 425 425 0 0 0 480 920
+           A 425 425 0 0 0 900 380"
+        fill="none" stroke="#0A0A0A" stroke-width="46" stroke-linecap="round"/>
+
+  <!-- Caule -->
+  <rect x="456" y="690" width="48" height="150" rx="14" fill="#5C4A07"/>
+
+  <!-- Folha esquerda (verde) -->
+  <path d="M 110 415
+           C 230 430, 350 540, 400 700
+           C 410 740, 400 800, 380 830
+           C 250 770, 150 640, 110 480
+           C 102 452, 102 430, 110 415 Z"
+        fill="#2E7D32"/>
+
+  <!-- Folha direita (laranja) -->
+  <path d="M 850 415
+           C 730 430, 610 540, 560 700
+           C 550 740, 560 800, 580 830
+           C 710 770, 810 640, 850 480
+           C 858 452, 858 430, 850 415 Z"
+        fill="#F5A623"/>
+
+  <!-- Folha interna esquerda (cinza escuro) -->
+  <path d="M 300 260
+           C 390 320, 440 450, 445 600
+           C 446 640, 438 670, 425 690
+           C 340 620, 285 490, 280 350
+           C 279 310, 286 280, 300 260 Z"
+        fill="#2B2B2B"/>
+
+  <!-- Folha interna direita (cinza escuro) -->
+  <path d="M 660 260
+           C 570 320, 520 450, 515 600
+           C 514 640, 522 670, 535 690
+           C 620 620, 675 490, 680 350
+           C 681 310, 674 280, 660 260 Z"
+        fill="#2B2B2B"/>
+
+  <!-- Folha central (preta) -->
+  <path d="M 480 40
+           C 540 130, 565 250, 560 350
+           C 556 430, 525 480, 480 510
+           C 435 480, 404 430, 400 350
+           C 395 250, 420 130, 480 40 Z"
+        fill="#0A0A0A"/>
+</svg>

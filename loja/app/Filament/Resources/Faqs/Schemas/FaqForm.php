@@ -1,0 +1,36 @@
+<?php
+
+namespace App\Filament\Resources\Faqs\Schemas;
+
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
+use Filament\Schemas\Schema;
+
+class FaqForm
+{
+    public static function configure(Schema $schema): Schema
+    {
+        return $schema
+            ->components([
+                TextInput::make('question')
+                    ->label('Pergunta')
+                    ->helperText('Escreva como o cliente pesquisa no Google. Ex: "Qual medida de big bag para 1.000 kg?"')
+                    ->required()
+                    ->columnSpanFull(),
+                Textarea::make('answer')
+                    ->label('Resposta')
+                    ->rows(4)
+                    ->required()
+                    ->columnSpanFull(),
+                TextInput::make('sort_order')
+                    ->label('Ordem')
+                    ->numeric()
+                    ->default(0),
+                Toggle::make('is_active')
+                    ->label('Ativa')
+                    ->default(true),
+            ])
+            ->columns(2);
+    }
+}

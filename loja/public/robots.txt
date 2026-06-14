@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /orcamento/
+Disallow: /cotacao
+
+Sitemap: https://radovanskibigbags.com.br/sitemap.xml

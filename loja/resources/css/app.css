@@ -1,0 +1,35 @@
+@import 'tailwindcss';
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+
+@theme {
+    --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+        'Segoe UI Symbol', 'Noto Color Emoji';
+
+    /* Identidade visual Radovanski (logo de folhas) */
+    --color-brand-50: #ecf6ec;
+    --color-brand-100: #d4ebd5;
+    --color-brand-200: #aad6ac;
+    --color-brand-300: #7cbe80;
+    --color-brand-400: #54a559;
+    --color-brand-500: #3a8c40;
+    --color-brand-600: #2e7d32;
+    --color-brand-700: #256628;
+    --color-brand-800: #1d4f20;
+    --color-brand-900: #143816;
+
+    --color-accent-400: #f7b94f;
+    --color-accent-500: #f5a623;
+    --color-accent-600: #d98c0f;
+
+    --color-ink: #2b2b2b;
+
+    --color-whatsapp: #25d366;
+    --color-whatsapp-dark: #1eb958;
+}
+
+/* Paginação do Laravel em verde da marca */
+.pagination-brand a:hover {
+    color: var(--color-brand-600);
+}

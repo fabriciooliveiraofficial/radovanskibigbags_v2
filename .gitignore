@@ -1,0 +1,25 @@
+# Ignore IDEs and system files
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+*.log
+.claude/
+
+# Ignore local system tools
+composer.phar
+
+# Ignore local environment files and vendor/node_modules in subfolders
+loja/.env
+loja/.env.production
+loja/.env.backup
+loja/node_modules/
+loja/vendor/
+loja/public/storage
+loja/public/build
+loja/public/fonts-manifest.dev.json
+loja/public/hot
+loja/storage/*.key
+loja/storage/pail
+loja/.phpunit.result.cache
+loja/.phpunit.cache
