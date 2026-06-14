@@ -58,8 +58,11 @@ jobs:
           username: "u714643564"
           password: ${{ secrets.SSH_PASSWORD }}
           script: |
+            # 0. Usa o PHP 8.4 do servidor (composer.lock exige >= 8.4.1; o "php" padrão é 8.3)
+            export PATH=/opt/alt/php84/usr/bin:$PATH
+
             cd /home/u714643564/domains/radovanskibigbags.com.br
-            
+
             # 1. Extrai o release substituindo os arquivos antigos
             tar -xzf release.tar.gz
             
