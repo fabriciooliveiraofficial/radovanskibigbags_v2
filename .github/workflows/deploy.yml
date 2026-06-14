@@ -38,7 +38,7 @@ jobs:
       - name: Package Application
         run: |
           # Cria um arquivo compactado para envio super rápido via SCP
-          tar -czf release.tar.gz .gitignore brand loja -X <(echo -e "loja/node_modules\nloja/vendor\nloja/tests")
+          tar --exclude='loja/node_modules' --exclude='loja/vendor' --exclude='loja/tests' -czf release.tar.gz .gitignore brand loja
 
       - name: Transfer Archive to Hostinger
         uses: appleboy/scp-action@master
