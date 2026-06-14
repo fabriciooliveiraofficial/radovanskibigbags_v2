@@ -29,16 +29,28 @@
     @if($categories->isNotEmpty())
     <section class="py-6">
         <h2 class="text-xl font-extrabold mb-4">Escolha por categoria</h2>
-        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
             @foreach($categories as $category)
                 <a href="{{ route('category', $category) }}"
-                   class="border-2 border-gray-200 hover:border-brand-500 rounded-xl p-4 text-center transition bg-white">
+                   class="group relative aspect-[4/3] overflow-hidden rounded-2xl shadow-sm ring-1 ring-gray-200 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:ring-brand-500">
                     @if($category->image_path)
                         <img src="{{ asset('storage/' . $category->image_path) }}" alt="{{ $category->name }}"
-                             class="w-16 h-16 object-cover rounded-lg mx-auto mb-2" loading="lazy">
+                             class="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                             loading="lazy">
+                    @else
+                        <div class="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-brand-500 to-brand-800">
+                            <svg class="w-12 h-12 text-white/25" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                            </svg>
+                        </div>
                     @endif
-                    <span class="font-bold text-ink block">{{ $category->name }}</span>
-                    <span class="text-xs text-gray-500">{{ $category->products_count }} {{ $category->products_count === 1 ? 'produto' : 'produtos' }}</span>
+
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent"></div>
+
+                    <div class="absolute inset-x-0 bottom-0 p-3 sm:p-4">
+                        <h3 class="font-extrabold text-white text-base sm:text-lg leading-tight drop-shadow-sm">{{ $category->name }}</h3>
+                        <p class="text-xs font-medium text-white/80 mt-0.5">{{ $category->products_count }} {{ $category->products_count === 1 ? 'produto' : 'produtos' }}</p>
+                    </div>
                 </a>
             @endforeach
         </div>
