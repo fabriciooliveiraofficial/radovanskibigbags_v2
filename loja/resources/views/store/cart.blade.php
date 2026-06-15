@@ -1,12 +1,12 @@
 @extends('layouts.store')
 
-@section('title', 'Minha cotação | Radovanski Big Bags Curitiba')
-@section('meta_description', 'Revise sua lista de big bags e sacos de ráfia e peça o orçamento pelo WhatsApp.')
+@section('title', 'Meu pedido | Radovanski Big Bags Curitiba')
+@section('meta_description', 'Revise sua lista de big bags e sacos de ráfia e finalize seu pedido pelo WhatsApp.')
 
 @section('content')
 <div class="max-w-3xl mx-auto px-4 py-8">
-    <h1 class="text-2xl font-extrabold mb-1">Minha cotação</h1>
-    <p class="text-gray-600 mb-6">Revise os itens e envie pelo WhatsApp — respondemos com o orçamento completo.</p>
+    <h1 class="text-2xl font-extrabold mb-1">Meu pedido</h1>
+    <p class="text-gray-600 mb-6">Revise os itens e finalize pelo WhatsApp — confirmamos seu pedido na hora.</p>
 
     @if($items->isEmpty())
         <div class="border-2 border-dashed border-gray-200 rounded-xl p-10 text-center">
@@ -144,9 +144,9 @@
                 @endif
             </div>
 
-            <form action="{{ route('cart.whatsapp') }}" method="post" class="mt-6 bg-brand-50 border border-brand-200 rounded-2xl p-5 space-y-3">
+            <form action="{{ route('cart.whatsapp') }}" method="post" class="mt-6 bg-brand-50 border border-brand-200 rounded-2xl p-5 space-y-3" x-data="{ paymentMethod: 'whatsapp' }">
                 @csrf
-                <p class="font-bold text-lg">Enviar pedido de orçamento</p>
+                <p class="font-bold text-lg">Finalizar pedido</p>
                 <div class="grid sm:grid-cols-3 gap-3">
                     <input type="text" name="name" placeholder="Seu nome (opcional)" value="{{ old('name') }}"
                            class="border border-gray-300 rounded-lg px-3 py-2.5">
@@ -155,12 +155,60 @@
                     <input type="text" name="city" placeholder="Sua cidade (opcional)" x-model="city"
                            class="border border-gray-300 rounded-lg px-3 py-2.5">
                 </div>
+
+                @if($creditApplication)
+                    <div class="border border-gray-200 rounded-lg p-3 space-y-2">
+                        <p class="font-semibold text-sm">Forma de pagamento</p>
+                        <label class="flex items-center gap-2 text-sm">
+                            <input type="radio" name="payment_method" value="whatsapp" x-model="paymentMethod" checked>
+                            Combinar pelo WhatsApp
+                        </label>
+                        <label class="flex items-center gap-2 text-sm">
+                            <input type="radio" name="payment_method" value="boleto" x-model="paymentMethod">
+                            Pagar com boleto ({{ $creditApplication->company_name }})
+                        </label>
+                        <p x-show="paymentMethod === 'boleto'" class="text-xs text-gray-600">
+                            O prazo (30/45/60 dias) será confirmado pela nossa equipe após análise do pedido.
+                        </p>
+                    </div>
+                @endif
+
                 <button class="w-full inline-flex items-center justify-center gap-2 bg-whatsapp hover:bg-whatsapp-dark text-white font-bold rounded-xl py-3.5 text-lg">
                     <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M17.5 14.4l-2.2-1c-.3-.1-.5-.1-.7.1l-1 1.2c-.2.2-.4.2-.6.1a8.1 8.1 0 01-3.8-3.7c-.1-.3-.1-.5.1-.6l1.1-1c.2-.3.3-.5.1-.8l-1-2.1c-.1-.4-.4-.5-.7-.5h-.8c-.3 0-.8.3-1 .5-1.7 1.7-1.3 3.8.2 6 1.7 2.6 4 4.5 6.9 5.2 1.6.4 3 .1 3.9-1.2.2-.2.3-.6.3-.9v-.7c0-.3-.3-.5-.8-.6z"/><path d="M12 2a10 10 0 00-8.6 15L2 22l5.2-1.4A10 10 0 1012 2zm0 18.2c-1.6 0-3.1-.5-4.4-1.2l-.3-.2-3 .8.8-3-.2-.3A8.2 8.2 0 1112 20.2z"/></svg>
-                    Pedir orçamento no WhatsApp
+                    Fazer Pedido pelo WhatsApp
                 </button>
                 <p class="text-xs text-gray-500 text-center">Abre o WhatsApp com sua lista pronta. Sem cadastro, sem pagamento online.</p>
             </form>
+
+            {{-- Pagamento para empresas (B2B) --}}
+            <div class="mt-6 border border-gray-200 rounded-2xl p-5">
+                <p class="font-bold text-lg mb-1">🏢 Pagamento para empresas (B2B)</p>
+
+                @if(session('boleto_not_found'))
+                    <div class="bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 mb-3 text-sm">
+                        CNPJ não encontrado ou ainda não aprovado para boleto.
+                        <a href="{{ route('credit-application.create') }}" class="font-bold underline">Preencha a ficha cadastral</a> para liberar essa opção.
+                    </div>
+                @endif
+
+                @if($creditApplication)
+                    <div class="bg-brand-50 border border-brand-200 text-brand-800 rounded-lg px-4 py-3 text-sm font-semibold">
+                        ✅ {{ $creditApplication->company_name }} aprovada para pagamento com boleto. Escolha essa opção em "Finalizar pedido".
+                    </div>
+                @else
+                    <p class="text-sm text-gray-600 mb-3">Sua empresa tem ficha cadastral aprovada? Informe o CNPJ para liberar o pagamento com boleto.</p>
+                    <form action="{{ route('cart.boleto.check') }}" method="post" class="flex gap-2 max-w-sm">
+                        @csrf
+                        <input type="text" name="cnpj" placeholder="CNPJ da empresa" inputmode="numeric"
+                               class="flex-1 border border-gray-300 rounded-lg px-3 py-2.5">
+                        <button class="bg-ink hover:bg-black text-white font-bold rounded-lg px-4">Verificar</button>
+                    </form>
+                    @error('cnpj')
+                        <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
+                    @enderror
+                    <p class="text-xs text-gray-500 mt-2">Ainda não tem cadastro? <a href="{{ route('credit-application.create') }}" class="text-brand-700 font-semibold hover:underline">Preencha a ficha cadastral</a>.</p>
+                @endif
+            </div>
         </div>
     @endif
 </div>

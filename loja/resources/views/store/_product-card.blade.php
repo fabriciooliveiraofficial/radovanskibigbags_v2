@@ -47,7 +47,7 @@
                 <input type="hidden" name="product_id" value="{{ $product->id }}">
                 <input type="hidden" name="qty" value="{{ $product->min_order_qty }}">
                 <button class="bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold rounded-lg px-3.5 py-2">
-                    + Cotação
+                    + Pedido
                 </button>
             </form>
         </div>

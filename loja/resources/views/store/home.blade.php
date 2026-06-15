@@ -13,7 +13,7 @@
         </h1>
         <p class="mt-3 text-gray-600 max-w-2xl mx-auto">
             Várias medidas em estoque para indústria, agronegócio, reciclagem, transporte e logística.
-            Peça o orçamento pelo WhatsApp e retire no nosso depósito — pagamento na hora.
+            Faça seu pedido pelo WhatsApp e retire no nosso depósito — pagamento na hora.
         </p>
         <div class="mt-6 flex flex-wrap justify-center gap-3">
             <a href="{{ route('products.index') }}" class="bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-lg px-6 py-3">
@@ -95,8 +95,8 @@
             </div>
             <div>
                 <div class="w-12 h-12 rounded-full bg-brand-600 text-white font-extrabold text-xl flex items-center justify-center mx-auto mb-3">2</div>
-                <p class="font-bold">Peça pelo WhatsApp</p>
-                <p class="text-sm text-gray-600 mt-1">Sua lista vira uma mensagem pronta. Respondemos com o orçamento.</p>
+                <p class="font-bold">Faça seu pedido pelo WhatsApp</p>
+                <p class="text-sm text-gray-600 mt-1">Sua lista vira uma mensagem pronta para fechar o pedido.</p>
             </div>
             <div>
                 <div class="w-12 h-12 rounded-full bg-brand-600 text-white font-extrabold text-xl flex items-center justify-center mx-auto mb-3">3</div>

@@ -47,7 +47,7 @@
 
         <div class="border border-gray-200 rounded-2xl p-5">
             <p class="font-bold text-lg mb-1">🚚 Não pode retirar?</p>
-            <p class="text-gray-700">Entregamos em Curitiba e região com valor calculado por distância, e despachamos por transportadora para outras cidades. Peça a cotação com frete no WhatsApp.</p>
+            <p class="text-gray-700">Entregamos em Curitiba e região com valor calculado por distância, e despachamos por transportadora para outras cidades. Faça seu pedido com frete pelo WhatsApp.</p>
             <a href="{{ store_whatsapp_link('Olá! Quero um orçamento com entrega. Meu CEP é: ') }}" target="_blank" rel="noopener"
                class="inline-flex items-center gap-2 mt-3 bg-whatsapp hover:bg-whatsapp-dark text-white font-bold rounded-lg px-5 py-2.5">
                 Cotar com entrega

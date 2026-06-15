@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\CartController;
+use App\Http\Controllers\CreditApplicationController;
 use App\Http\Controllers\QuotePublicController;
 use App\Http\Controllers\SeoController;
 use App\Http\Controllers\StoreController;
@@ -29,6 +30,11 @@ Route::post('/cotacao/atualizar', [CartController::class, 'update'])->name('cart
 Route::post('/cotacao/remover', [CartController::class, 'remove'])->name('cart.remove');
 Route::post('/cotacao/whatsapp', [CartController::class, 'whatsapp'])->name('cart.whatsapp');
 Route::post('/cotacao/frete', [CartController::class, 'freight'])->name('cart.freight');
+Route::post('/cotacao/boleto/verificar', [CartController::class, 'checkBoleto'])->name('cart.boleto.check');
+
+// Ficha cadastral B2B
+Route::get('/ficha-cadastral', [CreditApplicationController::class, 'create'])->name('credit-application.create');
+Route::post('/ficha-cadastral', [CreditApplicationController::class, 'store'])->name('credit-application.store');
 
 // Orçamento público (link compartilhado)
 Route::get('/orcamento/{token}', [QuotePublicController::class, 'show'])->name('quote.public');

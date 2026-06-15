@@ -158,7 +158,7 @@
                         @endif
                     </div>
                     <button class="flex-1 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-lg py-3 text-lg">
-                        Adicionar à cotação
+                        Adicionar ao pedido
                     </button>
                 </div>
             </form>

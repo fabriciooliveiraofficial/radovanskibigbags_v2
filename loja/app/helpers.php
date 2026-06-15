@@ -48,3 +48,30 @@ if (! function_exists('format_brl')) {
         return 'R$ '.number_format((float) $value, 2, ',', '.');
     }
 }
+
+if (! function_exists('cnpj_is_valid')) {
+    /** Valida CNPJ (14 dígitos + dígitos verificadores) */
+    function cnpj_is_valid(string $cnpj): bool
+    {
+        $cnpj = preg_replace('/\D/', '', $cnpj);
+
+        if (strlen($cnpj) !== 14 || preg_match('/^(\d)\1{13}$/', $cnpj)) {
+            return false;
+        }
+
+        $calcDigit = function (string $cnpj, array $weights): int {
+            $sum = 0;
+            foreach ($weights as $i => $weight) {
+                $sum += ((int) $cnpj[$i]) * $weight;
+            }
+            $rest = $sum % 11;
+
+            return $rest < 2 ? 0 : 11 - $rest;
+        };
+
+        $digit1 = $calcDigit($cnpj, [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]);
+        $digit2 = $calcDigit($cnpj, [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]);
+
+        return (int) $cnpj[12] === $digit1 && (int) $cnpj[13] === $digit2;
+    }
+}

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\CreditApplication;
 use App\Models\QuoteRequest;
 use App\Models\Setting;
 use App\Services\Cart;
@@ -22,10 +23,23 @@ class CartController extends Controller
 
     public function index(): View
     {
+        $creditApplication = null;
+
+        if ($creditApplicationId = session('cart.credit_application_id')) {
+            $creditApplication = CreditApplication::where('id', $creditApplicationId)
+                ->where('status', 'aprovado')
+                ->first();
+
+            if (! $creditApplication) {
+                session()->forget('cart.credit_application_id');
+            }
+        }
+
         return view('store.cart', [
             'items' => $this->cart->items(),
             'freight' => session('cart.freight'),
             'freightCep' => session('cart.freight_cep'),
+            'creditApplication' => $creditApplication,
         ]);
     }
 
@@ -65,7 +79,7 @@ class CartController extends Controller
 
         return redirect()
             ->route('cart.index')
-            ->with('status', 'Produto adicionado à sua cotação.');
+            ->with('status', 'Produto adicionado ao seu pedido.');
     }
 
     public function update(Request $request): RedirectResponse
@@ -94,6 +108,39 @@ class CartController extends Controller
     }
 
     /**
+     * Verifica se o CNPJ informado tem ficha cadastral aprovada e, em caso
+     * positivo, libera a opção "Pagar com boleto" no fechamento do pedido.
+     */
+    public function checkBoleto(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'cnpj' => ['required', 'string', function ($attribute, $value, $fail) {
+                if (! cnpj_is_valid($value)) {
+                    $fail('Informe um CNPJ válido.');
+                }
+            }],
+        ], [
+            'cnpj.required' => 'Informe o CNPJ da empresa.',
+        ]);
+
+        $cnpjDigits = preg_replace('/\D/', '', $data['cnpj']);
+
+        $creditApplication = CreditApplication::where('document', $cnpjDigits)
+            ->where('status', 'aprovado')
+            ->first();
+
+        if (! $creditApplication) {
+            return redirect()->route('cart.index')->with('boleto_not_found', true);
+        }
+
+        session(['cart.credit_application_id' => $creditApplication->id]);
+
+        return redirect()
+            ->route('cart.index')
+            ->with('status', 'Empresa aprovada para boleto! Escolha essa opção ao finalizar o pedido.');
+    }
+
+    /**
      * Registra o pedido de orçamento e redireciona para o WhatsApp da loja
      * com a mensagem montada.
      */
@@ -103,6 +150,7 @@ class CartController extends Controller
             'name' => ['nullable', 'string', 'max:120'],
             'phone' => ['nullable', 'string', 'max:20'],
             'city' => ['nullable', 'string', 'max:120'],
+            'payment_method' => ['nullable', 'in:whatsapp,boleto'],
         ]);
 
         $items = $this->cart->items();
@@ -110,6 +158,20 @@ class CartController extends Controller
         if ($items->isEmpty()) {
             return redirect()->route('products.index');
         }
+
+        $paymentMethod = 'whatsapp';
+        $creditApplicationId = null;
+
+        if (($data['payment_method'] ?? 'whatsapp') === 'boleto') {
+            $creditApplication = CreditApplication::find(session('cart.credit_application_id'));
+
+            if ($creditApplication && $creditApplication->status === 'aprovado') {
+                $paymentMethod = 'boleto';
+                $creditApplicationId = $creditApplication->id;
+            }
+        }
+
+        $data['payment_method'] = $paymentMethod;
 
         $quoteRequest = QuoteRequest::create([
             'name' => $data['name'] ?? null,
@@ -120,6 +182,9 @@ class CartController extends Controller
                 'variant_id' => $item['variant']?->id,
                 'qty' => $item['qty'],
             ])->all(),
+            'payment_method' => $paymentMethod,
+            'credit_application_id' => $creditApplicationId,
+            'boleto_status' => $paymentMethod === 'boleto' ? 'aguardando_aprovacao' : null,
         ]);
 
         // Dispara e-mail de alerta para o administrador
@@ -140,6 +205,7 @@ class CartController extends Controller
         }
 
         $this->cart->clear();
+        session()->forget('cart.credit_application_id');
 
         return redirect()->away('https://wa.me/'.$storePhone.'?text='.rawurlencode($message));
     }
@@ -153,7 +219,7 @@ class CartController extends Controller
         $freight = session('cart.freight');
         $freightCep = session('cart.freight_cep');
 
-        $lines = ['👋 Olá! Gostaria de um orçamento para os itens abaixo:', ''];
+        $lines = ['👋 Olá! Quero fazer um pedido dos itens abaixo:', ''];
         $lines[] = '━━━━━━━━━━━━━━━';
         $lines[] = '📦 *ITENS*';
         $lines[] = '';
@@ -243,6 +309,11 @@ class CartController extends Controller
                 $lines[] = '✅ *TOTAL COM ENTREGA*';
                 array_push($lines, ...$totalLines);
             }
+        }
+
+        if (($data['payment_method'] ?? 'whatsapp') === 'boleto') {
+            $lines[] = '';
+            $lines[] = '💳 *Pagamento:* Boleto (ficha cadastral aprovada) — prazo a confirmar pela equipe.';
         }
 
         $lines[] = '';

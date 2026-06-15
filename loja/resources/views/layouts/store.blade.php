@@ -80,13 +80,13 @@
                 <a href="{{ route('cart.index') }}"
                    class="relative inline-flex items-center gap-2 border-2 border-brand-600 text-brand-700 font-semibold rounded-lg px-4 py-2 hover:bg-brand-50">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17a2 2 0 100 4 2 2 0 000-4zm8 0a2 2 0 100 4 2 2 0 000-4zM3 3h2l2.6 10.4A2 2 0 009.5 15h7.9a2 2 0 001.9-1.4L21 7H6"/></svg>
-                    <span class="hidden sm:inline">Minha cotação</span>
+                    <span class="hidden sm:inline">Meu pedido</span>
                     @php($cartCount = app(\App\Services\Cart::class)->count())
                     @if($cartCount > 0)
                         <span class="absolute -top-2 -right-2 bg-accent-500 text-white text-xs font-bold rounded-full h-5 min-w-5 px-1 flex items-center justify-center">{{ $cartCount }}</span>
                     @endif
                 </a>
-                <a href="{{ store_whatsapp_link('Olá! Vim pelo site e quero um orçamento.') }}" target="_blank" rel="noopener"
+                <a href="{{ store_whatsapp_link('Olá! Vim pelo site e quero fazer um pedido.') }}" target="_blank" rel="noopener"
                    class="hidden sm:inline-flex items-center gap-2 bg-whatsapp hover:bg-whatsapp-dark text-white font-semibold rounded-lg px-4 py-2.5">
                     <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M17.5 14.4l-2.2-1c-.3-.1-.5-.1-.7.1l-1 1.2c-.2.2-.4.2-.6.1a8.1 8.1 0 01-3.8-3.7c-.1-.3-.1-.5.1-.6l1.1-1c.2-.3.3-.5.1-.8l-1-2.1c-.1-.4-.4-.5-.7-.5h-.8c-.3 0-.8.3-1 .5-1.7 1.7-1.3 3.8.2 6 1.7 2.6 4 4.5 6.9 5.2 1.6.4 3 .1 3.9-1.2.2-.2.3-.6.3-.9v-.7c0-.3-.3-.5-.8-.6z"/><path d="M12 2a10 10 0 00-8.6 15L2 22l5.2-1.4A10 10 0 1012 2zm0 18.2c-1.6 0-3.1-.5-4.4-1.2l-.3-.2-3 .8.8-3-.2-.3A8.2 8.2 0 1112 20.2z"/></svg>
                     WhatsApp
@@ -156,6 +156,7 @@
                 <li><a class="hover:text-white" href="{{ route('wizard') }}">Assistente de medidas</a></li>
                 <li><a class="hover:text-white" href="{{ route('faq') }}">Perguntas frequentes</a></li>
                 <li><a class="hover:text-white" href="{{ route('pickup') }}">Retirada e pagamento</a></li>
+                <li><a class="hover:text-white" href="{{ route('credit-application.create') }}">Ficha cadastral B2B (boleto)</a></li>
             </ul>
         </div>
     </div>

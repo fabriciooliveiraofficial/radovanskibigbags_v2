@@ -61,7 +61,7 @@ class StoreSmokeTest extends TestCase
             ->assertSee('R$ 42,90')
             ->assertSee('Especificações')
             ->assertSee('schema.org', escape: false)
-            ->assertSee('Adicionar à cotação');
+            ->assertSee('Adicionar ao pedido');
     }
 
     public function test_product_with_hidden_price_shows_sob_consulta(): void
@@ -104,7 +104,7 @@ class StoreSmokeTest extends TestCase
         $this->get('/cotacao')
             ->assertOk()
             ->assertSee('Big Bag Lavado')
-            ->assertSee('Pedir orçamento no WhatsApp');
+            ->assertSee('Fazer Pedido pelo WhatsApp');
 
         // Envia para WhatsApp: registra QuoteRequest e redireciona para wa.me
         $response = $this->post('/cotacao/whatsapp', ['name' => 'João', 'city' => 'Curitiba']);
