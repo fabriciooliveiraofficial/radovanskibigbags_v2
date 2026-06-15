@@ -8,6 +8,7 @@ use App\Services\Cart;
 use App\Services\Shipping\FreightCalculator;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\View\View;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
@@ -131,25 +132,8 @@ class CartController extends Controller
             }
         }
 
-        $lines = ['Olá! Quero um orçamento dos itens abaixo:', ''];
+        $message = $this->buildWhatsAppMessage($items, $data);
 
-        foreach ($items as $item) {
-            $label = $item['product']->name;
-            if ($item['variant']) {
-                $label .= ' ('.$item['variant']->name.')';
-            }
-            $lines[] = "• {$item['qty']}x {$label}";
-        }
-
-        $lines[] = '';
-        if (! empty($data['name'])) {
-            $lines[] = 'Nome: '.$data['name'];
-        }
-        if (! empty($data['city'])) {
-            $lines[] = 'Cidade: '.$data['city'];
-        }
-
-        $message = implode("\n", $lines);
         $storePhone = preg_replace('/\D/', '', (string) Setting::get('store_whatsapp', ''));
         if ($storePhone && ! str_starts_with($storePhone, '55')) {
             $storePhone = '55'.$storePhone;
@@ -158,5 +142,124 @@ class CartController extends Controller
         $this->cart->clear();
 
         return redirect()->away('https://wa.me/'.$storePhone.'?text='.rawurlencode($message));
+    }
+
+    /**
+     * Monta a mensagem de orçamento detalhada (itens, especificações, subtotal,
+     * frete e total) enviada ao WhatsApp da loja.
+     */
+    private function buildWhatsAppMessage(Collection $items, array $data): string
+    {
+        $freight = session('cart.freight');
+        $freightCep = session('cart.freight_cep');
+
+        $lines = ['👋 Olá! Gostaria de um orçamento para os itens abaixo:', ''];
+        $lines[] = '━━━━━━━━━━━━━━━';
+        $lines[] = '📦 *ITENS*';
+        $lines[] = '';
+
+        $subtotal = 0.0;
+        $hasConsulta = false;
+        $n = 0;
+
+        foreach ($items as $item) {
+            $n++;
+            $product = $item['product'];
+            $variant = $item['variant'];
+            $qty = $item['qty'];
+            $unitPrice = $item['unit_price'];
+            $unit = $product->unit ?: 'un';
+
+            $lines[] = $n.'. *'.$product->name.'*';
+
+            $specs = [];
+            if ($variant) {
+                $specs[] = $variant->name;
+            } else {
+                if ($product->dimensionsLabel()) {
+                    $specs[] = $product->dimensionsLabel();
+                }
+                if ($product->capacity_kg) {
+                    $specs[] = number_format((float) $product->capacity_kg, 0, ',', '.').' kg';
+                }
+            }
+            $specs[] = $product->conditionLabel();
+            $lines[] = '   📐 '.implode(' · ', array_filter($specs));
+
+            if ($unitPrice !== null) {
+                $lineTotal = $unitPrice * $qty;
+                $subtotal += $lineTotal;
+                $lines[] = '   🔢 '.$qty.' '.$unit.' × '.format_brl($unitPrice).' = *'.format_brl($lineTotal).'*';
+            } else {
+                $hasConsulta = true;
+                $lines[] = '   🔢 '.$qty.' '.$unit.' — *sob consulta*';
+            }
+
+            $lines[] = '   🔗 '.route('products.show', $product);
+            $lines[] = '';
+        }
+
+        $lines[] = '━━━━━━━━━━━━━━━';
+        $subtotalLine = '💰 *Subtotal: '.format_brl($subtotal).'*';
+        if ($hasConsulta) {
+            $subtotalLine .= ' _(itens sob consulta não inclusos)_';
+        }
+        $lines[] = $subtotalLine;
+
+        if (! empty($freight['options'])) {
+            $lines[] = '';
+            $freightTitle = '🚚 *FRETE*';
+            if ($freightCep) {
+                $freightTitle .= ' (CEP '.$freightCep.')';
+            }
+            $lines[] = $freightTitle;
+
+            $totalLines = [];
+            foreach ($freight['options'] as $option) {
+                $icon = match ($option['method']) {
+                    'retirada' => '🏬',
+                    'entrega_propria' => '🚛',
+                    'transportadora' => '📦',
+                    default => '💬',
+                };
+
+                if ($option['cost'] === null) {
+                    // O label já descreve "sob consulta" — não repete o custo.
+                    $line = '   '.$icon.' '.$option['label'];
+                } else {
+                    $cost = $option['cost'] == 0.0 ? 'Grátis' : format_brl($option['cost']);
+                    $line = '   '.$icon.' '.$option['label'].' — '.$cost;
+                    $totalLines[] = '   '.$option['label'].': *'.format_brl($subtotal + $option['cost']).'*';
+                }
+
+                if ($option['deadline']) {
+                    $line .= ' ('.$option['deadline'].')';
+                }
+                $lines[] = $line;
+            }
+
+            if (! empty($totalLines)) {
+                $lines[] = '';
+                $lines[] = '✅ *TOTAL COM ENTREGA*';
+                array_push($lines, ...$totalLines);
+            }
+        }
+
+        $lines[] = '';
+        $lines[] = '━━━━━━━━━━━━━━━';
+        if (! empty($data['name'])) {
+            $lines[] = '👤 Nome: '.$data['name'];
+        }
+        if (! empty($data['city'])) {
+            $lines[] = '📍 Cidade: '.$data['city'];
+        }
+        if (! empty($data['phone'])) {
+            $lines[] = '📱 Contato: '.$data['phone'];
+        }
+
+        $lines[] = '';
+        $lines[] = '_Valores finais confirmados pela nossa equipe._';
+
+        return implode("\n", $lines);
     }
 }
