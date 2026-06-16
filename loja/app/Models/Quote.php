@@ -53,16 +53,18 @@ class Quote extends Model
 
     public static function nextNumber(string $type = 'orcamento'): string
     {
-        $prefix = $type === 'pedido' ? 'PED' : 'ORC';
-        $year   = now()->year;
+        $prefix = $type === 'pedido' ? 'OC' : 'ORC';
 
-        $last = static::where('number', 'like', "{$prefix}-{$year}-%")
-            ->orderByDesc('number')
-            ->value('number');
+        // Sequência compartilhada: ORC-0001606 e OC-0001606 usam o mesmo número
+        $lastOrc = static::where('number', 'like', 'ORC-%')->orderByDesc('number')->value('number');
+        $lastOc  = static::where('number', 'like', 'OC-%')->orderByDesc('number')->value('number');
 
-        $seq = $last ? ((int) Str::afterLast($last, '-')) + 1 : 1;
+        $seqOrc = $lastOrc ? (int) Str::afterLast($lastOrc, '-') : 0;
+        $seqOc  = $lastOc  ? (int) Str::afterLast($lastOc, '-')  : 0;
 
-        return sprintf('%s-%d-%04d', $prefix, $year, $seq);
+        $seq = max($seqOrc, $seqOc, 1605) + 1;
+
+        return sprintf('%s-%07d', $prefix, $seq);
     }
 
     public function isPedido(): bool

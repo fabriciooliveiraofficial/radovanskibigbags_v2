@@ -5,6 +5,7 @@ namespace App\Filament\Resources\Quotes\Tables;
 use App\Models\Quote;
 use App\Models\SmtpAccount;
 use App\Services\SmtpMailService;
+use Illuminate\Support\Str;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
@@ -191,6 +192,35 @@ class QuotesTable
                     ->action(function (Quote $record) {
                         $record->forceFill(['status' => 'enviado', 'sent_at' => now()])->saveQuietly();
                         $record->events()->create(['type' => 'sent']);
+                    }),
+
+                Action::make('converterEmPedido')
+                    ->label('Converter em Pedido')
+                    ->icon('heroicon-o-arrow-path')
+                    ->color('success')
+                    ->visible(fn (Quote $record) => $record->type === 'orcamento')
+                    ->requiresConfirmation()
+                    ->modalHeading('Converter Orçamento em Pedido')
+                    ->modalDescription('O orçamento receberá um número de pedido (OC-XXXXXXX). Todos os itens, cliente, frete e condições são mantidos. Esta ação não pode ser desfeita.')
+                    ->action(function (Quote $record) {
+                        // Mantém o mesmo número: ORC-0001606 → OC-0001606
+                        $numeroPedido = 'OC-'.Str::afterLast($record->number, '-');
+
+                        $record->forceFill([
+                            'type'   => 'pedido',
+                            'number' => $numeroPedido,
+                        ])->save();
+
+                        $record->events()->create([
+                            'type' => 'converted',
+                            'meta' => ['from_type' => 'orcamento', 'orc_number' => $record->getOriginal('number')],
+                        ]);
+
+                        Notification::make()
+                            ->title('Pedido '.$numeroPedido.' gerado!')
+                            ->body('Orçamento convertido. Todos os dados foram mantidos.')
+                            ->success()
+                            ->send();
                     }),
 
                 Action::make('duplicar')
