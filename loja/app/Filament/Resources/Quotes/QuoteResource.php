@@ -5,6 +5,7 @@ namespace App\Filament\Resources\Quotes;
 use App\Filament\Resources\Quotes\Pages\CreateQuote;
 use App\Filament\Resources\Quotes\Pages\EditQuote;
 use App\Filament\Resources\Quotes\Pages\ListQuotes;
+use App\Filament\Resources\Quotes\RelationManagers\AttachmentsRelationManager;
 use App\Filament\Resources\Quotes\RelationManagers\ItemsRelationManager;
 use App\Filament\Resources\Quotes\Schemas\QuoteForm;
 use App\Filament\Resources\Quotes\Tables\QuotesTable;
@@ -44,6 +45,7 @@ class QuoteResource extends Resource
     {
         return [
             ItemsRelationManager::class,
+            AttachmentsRelationManager::class,
         ];
     }
 

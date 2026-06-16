@@ -133,8 +133,13 @@ class QuotesTable
                                 ->required(),
 
                             Toggle::make('attach_pdf')
-                                ->label('Anexar PDF')
+                                ->label('Anexar PDF do documento')
                                 ->default(true),
+
+                            Toggle::make('attach_files')
+                                ->label('Incluir anexos (boletos, NF-e, imagens…)')
+                                ->default(true)
+                                ->visible(fn () => $record->attachments()->exists()),
                         ];
                     })
                     ->action(function (Quote $record, array $data) {
@@ -158,6 +163,7 @@ class QuotesTable
                             attachPdf: (bool) ($data['attach_pdf'] ?? false),
                             cc: $cc,
                             account: $account,
+                            attachFiles: (bool) ($data['attach_files'] ?? true),
                         );
 
                         if ($record->status === 'rascunho') {

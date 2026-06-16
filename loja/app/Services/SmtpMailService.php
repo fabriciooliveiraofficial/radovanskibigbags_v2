@@ -7,6 +7,7 @@ use App\Models\Quote;
 use App\Models\SmtpAccount;
 use Illuminate\Mail\Message;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
 
 class SmtpMailService
 {
@@ -18,8 +19,13 @@ class SmtpMailService
         bool $attachPdf = false,
         array $cc = [],
         ?SmtpAccount $account = null,
+        bool $attachFiles = true,
     ): EmailLog {
         $account ??= SmtpAccount::default();
+
+        if ($attachFiles) {
+            $quote->loadMissing('attachments');
+        }
 
         $log = EmailLog::create([
             'quote_id'        => $quote->id,
@@ -38,7 +44,7 @@ class SmtpMailService
             $pixelUrl = $log->trackingPixelUrl();
 
             $mailer->send([], [], function (Message $msg) use (
-                $to, $cc, $subject, $body, $attachPdf, $quote, $pixelUrl, $account
+                $to, $cc, $subject, $body, $attachPdf, $attachFiles, $quote, $pixelUrl, $account
             ) {
                 $fromAddress = $account?->from_address ?? config('mail.from.address');
                 $fromName    = $account?->from_name    ?? config('mail.from.name');
@@ -53,9 +59,22 @@ class SmtpMailService
                 }
 
                 if ($attachPdf) {
-                    $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('quote.pdf', ['quote' => $quote])->setPaper('a4');
-                    $filename = 'pedido-'.$quote->number.'.pdf';
-                    $msg->attachData($pdf->output(), $filename, ['mime' => 'application/pdf']);
+                    $pdfView = $quote->isPedido() ? 'quote.pedido-pdf' : 'quote.pdf';
+                    $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView($pdfView, ['quote' => $quote])->setPaper('a4');
+                    $prefix = $quote->isPedido() ? 'pedido' : 'orcamento';
+                    $msg->attachData($pdf->output(), $prefix.'-'.$quote->number.'.pdf', ['mime' => 'application/pdf']);
+                }
+
+                if ($attachFiles && $quote->attachments->isNotEmpty()) {
+                    foreach ($quote->attachments as $att) {
+                        $filePath = Storage::disk('public')->path($att->path);
+                        if (file_exists($filePath)) {
+                            $msg->attach($filePath, [
+                                'as'   => $att->original_filename ?? basename($att->path),
+                                'mime' => $att->mime_type ?? 'application/octet-stream',
+                            ]);
+                        }
+                    }
                 }
             });
 

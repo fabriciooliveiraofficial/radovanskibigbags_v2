@@ -195,6 +195,11 @@ class QuoteRequestsTable
                             Toggle::make('attach_pdf')
                                 ->label('Anexar PDF do pedido')
                                 ->default(true),
+
+                            Toggle::make('attach_files')
+                                ->label('Incluir anexos (boletos, NF-e, imagens…)')
+                                ->default(true)
+                                ->visible(fn () => $record->quote?->attachments()->exists()),
                         ];
                     })
                     ->action(function (QuoteRequest $record, array $data) {
@@ -226,6 +231,7 @@ class QuoteRequestsTable
                             attachPdf: (bool) ($data['attach_pdf'] ?? false),
                             cc: array_values($cc),
                             account: $account,
+                            attachFiles: (bool) ($data['attach_files'] ?? true),
                         );
 
                         if ($log->status === 'falhou') {

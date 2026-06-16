@@ -92,6 +92,11 @@ class Quote extends Model
         return $this->hasMany(QuoteEvent::class)->latest('created_at');
     }
 
+    public function attachments(): HasMany
+    {
+        return $this->hasMany(QuoteAttachment::class)->latest();
+    }
+
     public function emailLogs(): HasMany
     {
         return $this->hasMany(EmailLog::class)->latest();

@@ -247,6 +247,33 @@
         </div>
     </div>
 
+    {{-- ===== ANEXOS ===== --}}
+    @if($quote->attachments->isNotEmpty())
+        <div class="bg-white border-x border-gray-200 px-5 py-4">
+            <p class="text-xs font-bold uppercase text-gray-400 mb-3">Documentos / Anexos</p>
+            <div class="space-y-2">
+                @foreach($quote->attachments as $att)
+                    <a href="{{ $att->publicUrl() }}" target="_blank" rel="noopener"
+                       class="flex items-center gap-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 group transition-colors">
+                        <div class="w-10 h-10 rounded-lg bg-brand-50 flex items-center justify-center text-xl shrink-0">
+                            {{ $att->typeIcon() }}
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="font-semibold text-sm truncate">{{ $att->label ?: $att->original_filename }}</p>
+                            @if($att->label && $att->original_filename)
+                                <p class="text-xs text-gray-400 truncate">{{ $att->original_filename }}</p>
+                            @endif
+                            @if($att->size_bytes)
+                                <p class="text-xs text-gray-400">{{ $att->sizeFormatted() }}</p>
+                            @endif
+                        </div>
+                        <span class="text-xs font-semibold text-brand-700 group-hover:underline shrink-0">Baixar ↓</span>
+                    </a>
+                @endforeach
+            </div>
+        </div>
+    @endif
+
     {{-- ===== GARANTIAS ===== --}}
     <div class="bg-white border border-gray-200 rounded-b-2xl px-5 py-4 grid sm:grid-cols-2 gap-2 text-sm">
         <div class="flex gap-2 items-center"><span class="text-brand-600 font-bold text-base">✓</span> Confirmação imediata via WhatsApp</div>
