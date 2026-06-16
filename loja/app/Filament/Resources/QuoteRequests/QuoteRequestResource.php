@@ -18,15 +18,15 @@ class QuoteRequestResource extends Resource
 {
     protected static ?string $model = QuoteRequest::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedShoppingCart;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedInboxArrowDown;
 
     protected static string|UnitEnum|null $navigationGroup = 'Vendas';
 
-    protected static ?string $modelLabel = 'pedido';
+    protected static ?string $modelLabel = 'solicitação';
 
-    protected static ?string $pluralModelLabel = 'pedidos';
+    protected static ?string $pluralModelLabel = 'solicitações do site';
 
-    protected static ?int $navigationSort = 0;
+    protected static ?int $navigationSort = 3;
 
     public static function form(Schema $schema): Schema
     {

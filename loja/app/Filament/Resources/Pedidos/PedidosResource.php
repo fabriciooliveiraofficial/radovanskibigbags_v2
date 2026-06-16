@@ -1,14 +1,14 @@
 <?php
 
-namespace App\Filament\Resources\Quotes;
+namespace App\Filament\Resources\Pedidos;
 
-use App\Filament\Resources\Quotes\Pages\CreateQuote;
-use App\Filament\Resources\Quotes\Pages\EditQuote;
-use App\Filament\Resources\Quotes\Pages\ListQuotes;
+use App\Filament\Resources\Pedidos\Pages\CreatePedido;
+use App\Filament\Resources\Pedidos\Pages\EditPedido;
+use App\Filament\Resources\Pedidos\Pages\ListPedidos;
+use App\Filament\Resources\Pedidos\Tables\PedidosTable;
 use App\Filament\Resources\Quotes\RelationManagers\AttachmentsRelationManager;
 use App\Filament\Resources\Quotes\RelationManagers\ItemsRelationManager;
 use App\Filament\Resources\Quotes\Schemas\QuoteForm;
-use App\Filament\Resources\Quotes\Tables\QuotesTable;
 use App\Models\Quote;
 use BackedEnum;
 use Filament\Resources\Resource;
@@ -18,23 +18,25 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use UnitEnum;
 
-class QuoteResource extends Resource
+class PedidosResource extends Resource
 {
     protected static ?string $model = Quote::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedDocumentText;
+    protected static ?string $slug = 'pedidos';
+
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedShoppingBag;
 
     protected static string|UnitEnum|null $navigationGroup = 'Vendas';
 
-    protected static ?string $modelLabel = 'orçamento';
+    protected static ?string $modelLabel = 'pedido';
 
-    protected static ?string $pluralModelLabel = 'orçamentos';
+    protected static ?string $pluralModelLabel = 'pedidos';
 
-    protected static ?int $navigationSort = 2;
+    protected static ?int $navigationSort = 1;
 
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()->where('type', 'orcamento');
+        return parent::getEloquentQuery()->where('type', 'pedido');
     }
 
     public static function form(Schema $schema): Schema
@@ -44,7 +46,7 @@ class QuoteResource extends Resource
 
     public static function table(Table $table): Table
     {
-        return QuotesTable::configure($table);
+        return PedidosTable::configure($table);
     }
 
     public static function getRelations(): array
@@ -58,9 +60,9 @@ class QuoteResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => ListQuotes::route('/'),
-            'create' => CreateQuote::route('/create'),
-            'edit' => EditQuote::route('/{record}/edit'),
+            'index'  => ListPedidos::route('/'),
+            'create' => CreatePedido::route('/create'),
+            'edit'   => EditPedido::route('/{record}/edit'),
         ];
     }
 }

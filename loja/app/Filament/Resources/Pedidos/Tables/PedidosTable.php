@@ -1,11 +1,11 @@
 <?php
 
-namespace App\Filament\Resources\Quotes\Tables;
+namespace App\Filament\Resources\Pedidos\Tables;
 
+use App\Filament\Resources\Pedidos\PedidosResource;
 use App\Models\Quote;
 use App\Models\SmtpAccount;
 use App\Services\SmtpMailService;
-use Illuminate\Support\Str;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
@@ -19,14 +19,14 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 
-class QuotesTable
+class PedidosTable
 {
     public static function configure(Table $table): Table
     {
         return $table
             ->columns([
                 TextColumn::make('number')
-                    ->label('Nº Orçamento')
+                    ->label('Nº Pedido')
                     ->searchable()
                     ->sortable(),
                 TextColumn::make('customer.company')
@@ -76,7 +76,6 @@ class QuotesTable
                     ->form(function (Quote $record) {
                         $smtpOptions = SmtpAccount::where('is_active', true)->pluck('name', 'id')->toArray();
                         $defaultId   = SmtpAccount::where('is_default', true)->value('id');
-                        $tipo        = $record->isPedido() ? 'pedido' : 'orçamento';
 
                         return [
                             Select::make('smtp_account_id')
@@ -99,7 +98,7 @@ class QuotesTable
 
                             TextInput::make('subject')
                                 ->label('Assunto')
-                                ->default(ucfirst($tipo).' '.$record->number.' — '.store_setting('store_name', 'Radovanski Big Bags'))
+                                ->default('Pedido '.$record->number.' — '.store_setting('store_name', 'Radovanski Big Bags'))
                                 ->required(),
 
                             Textarea::make('body')
@@ -108,12 +107,10 @@ class QuotesTable
                                 ->default(implode("\n", [
                                     'Olá!',
                                     '',
-                                    'Segue o link do seu '.($record->isPedido() ? 'pedido' : 'orçamento').':',
+                                    'Segue o link do seu pedido:',
                                     $record->publicUrl(),
                                     '',
-                                    $record->isPedido()
-                                        ? 'Para confirmar, acesse o link acima e clique em "Confirmar Pedido".'
-                                        : 'Para aprovar, acesse o link acima.',
+                                    'Para confirmar, acesse o link acima e clique em "Confirmar Pedido".',
                                     '',
                                     'Dúvidas? Fale pelo WhatsApp: '.store_setting('store_whatsapp', ''),
                                     '',
@@ -123,7 +120,7 @@ class QuotesTable
                                 ->required(),
 
                             Toggle::make('attach_pdf')
-                                ->label('Anexar PDF do documento')
+                                ->label('Anexar PDF do pedido')
                                 ->default(true),
 
                             Toggle::make('attach_files')
@@ -181,53 +178,15 @@ class QuotesTable
                         }
                     }),
 
-                Action::make('enviado')
-                    ->label('Marcar enviado')
-                    ->icon('heroicon-o-paper-airplane')
-                    ->visible(fn (Quote $record) => $record->status === 'rascunho')
-                    ->action(function (Quote $record) {
-                        $record->forceFill(['status' => 'enviado', 'sent_at' => now()])->saveQuietly();
-                        $record->events()->create(['type' => 'sent']);
-                    }),
-
-                Action::make('converterEmPedido')
-                    ->label('Converter em Pedido')
-                    ->icon('heroicon-o-arrow-path')
-                    ->color('success')
-                    ->visible(fn (Quote $record) => $record->type === 'orcamento')
-                    ->requiresConfirmation()
-                    ->modalHeading('Converter Orçamento em Pedido')
-                    ->modalDescription('O orçamento receberá um número de pedido (OC-XXXXXXX). Todos os itens, cliente, frete e condições são mantidos. Esta ação não pode ser desfeita.')
-                    ->action(function (Quote $record) {
-                        // Mantém o mesmo número: ORC-0001606 → OC-0001606
-                        $numeroPedido = 'OC-'.Str::afterLast($record->number, '-');
-
-                        $record->forceFill([
-                            'type'   => 'pedido',
-                            'number' => $numeroPedido,
-                        ])->save();
-
-                        $record->events()->create([
-                            'type' => 'converted',
-                            'meta' => ['from_type' => 'orcamento', 'orc_number' => $record->getOriginal('number')],
-                        ]);
-
-                        Notification::make()
-                            ->title('Pedido '.$numeroPedido.' gerado!')
-                            ->body('Acesse "Pedidos" no menu lateral para visualizá-lo.')
-                            ->success()
-                            ->send();
-                    }),
-
                 Action::make('duplicar')
                     ->label('Duplicar')
                     ->icon('heroicon-o-document-duplicate')
                     ->requiresConfirmation()
-                    ->modalHeading('Duplicar documento')
+                    ->modalHeading('Duplicar pedido')
                     ->modalDescription('Cria um novo rascunho com os mesmos itens e condições.')
                     ->action(function (Quote $record) {
                         $new = $record->replicate(['number', 'public_token', 'status', 'sent_at', 'viewed_at', 'approved_at', 'sent_channels', 'quote_request_id']);
-                        $new->status     = 'rascunho';
+                        $new->status      = 'rascunho';
                         $new->valid_until = now()->addDays(7);
                         $new->save();
 
@@ -239,7 +198,7 @@ class QuotesTable
 
                         $new->events()->create(['type' => 'created', 'meta' => ['duplicated_from' => $record->number]]);
 
-                        return redirect(\App\Filament\Resources\Quotes\QuoteResource::getUrl('edit', ['record' => $new]));
+                        return redirect(PedidosResource::getUrl('edit', ['record' => $new]));
                     }),
 
                 EditAction::make(),
