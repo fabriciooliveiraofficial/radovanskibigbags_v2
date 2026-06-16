@@ -18,17 +18,47 @@ class CustomerForm
                 TextInput::make('company')
                     ->label('Empresa'),
                 TextInput::make('document')
-                    ->label('CNPJ / CPF'),
+                    ->label('CNPJ / CPF')
+                    ->extraInputAttributes([
+                        'x-mask:dynamic' => '$input.length > 14 ? \'99.999.999/9999-99\' : \'999.999.999-99\'',
+                    ]),
                 TextInput::make('phone')
                     ->label('WhatsApp')
                     ->tel()
                     ->required()
-                    ->helperText('Com DDD. Ex: (41) 99999-9999'),
+                    ->helperText('Com DDD. Ex: (41) 99999-9999')
+                    ->extraInputAttributes([
+                        'x-mask:dynamic' => '$input.replace(/\D/g, "").length > 10 ? "(99) 99999-9999" : "(99) 9999-9999"',
+                    ]),
                 TextInput::make('email')
                     ->label('E-mail')
                     ->email(),
                 TextInput::make('cep')
-                    ->label('CEP'),
+                    ->label('CEP')
+                    ->mask('99999-999')
+                    ->live(debounce: 500)
+                    ->afterStateUpdated(function ($state, callable $set) {
+                        if (! $state) {
+                            return;
+                        }
+                        $cleanCep = preg_replace('/\D/', '', $state);
+                        if (strlen($cleanCep) !== 8) {
+                            return;
+                        }
+                        try {
+                            $response = app(\App\Http\Controllers\CepController::class)->lookup($cleanCep);
+                            if ($response->isSuccessful()) {
+                                $data = json_decode($response->getContent(), true);
+                                if ($data && !isset($data['error'])) {
+                                    $set('address', trim(($data['street'] ?? '') . ', ' . ($data['neighborhood'] ?? ''), ', '));
+                                    $set('city', $data['city'] ?? '');
+                                    $set('state', $data['state'] ?? '');
+                                }
+                            }
+                        } catch (\Exception $e) {
+                            \Illuminate\Support\Facades\Log::error("Erro ao buscar CEP no form de cliente: " . $e->getMessage());
+                        }
+                    }),
                 TextInput::make('address')
                     ->label('Endereço'),
                 TextInput::make('city')

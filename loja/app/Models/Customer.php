@@ -14,6 +14,11 @@ class Customer extends Model
         return $this->hasMany(Quote::class)->latest();
     }
 
+    public function creditApplications(): HasMany
+    {
+        return $this->hasMany(CreditApplication::class)->latest();
+    }
+
     /** Telefone só com dígitos, com DDI 55, pronto para wa.me */
     public function whatsappNumber(): string
     {

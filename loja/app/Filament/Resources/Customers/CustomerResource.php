@@ -8,6 +8,7 @@ use App\Filament\Resources\Customers\Pages\ListCustomers;
 use App\Filament\Resources\Customers\Schemas\CustomerForm;
 use App\Filament\Resources\Customers\Tables\CustomersTable;
 use App\Models\Customer;
+use App\Filament\Resources\Customers\RelationManagers\CreditApplicationsRelationManager;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
@@ -41,7 +42,9 @@ class CustomerResource extends Resource
 
     public static function getRelations(): array
     {
-        return [];
+        return [
+            CreditApplicationsRelationManager::class,
+        ];
     }
 
     public static function getPages(): array

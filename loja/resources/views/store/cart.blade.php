@@ -79,26 +79,51 @@
                     }
                     this.loadingAddress = true;
                     this.addressError = false;
+
+                    const applyAddress = (street, neighborhood, city, state) => {
+                        this.address = {
+                            logradouro: street,
+                            bairro: neighborhood,
+                            localidade: city,
+                            uf: state
+                        };
+                        if (!this.city) {
+                            this.city = city + ' - ' + state;
+                        }
+                        if (autoSubmit) {
+                            this.$refs.freightForm.requestSubmit();
+                        }
+                    };
+
                     try {
                         const res = await fetch('https://viacep.com.br/ws/' + digits + '/json/');
-                        const data = await res.json();
-                        if (data.erro) {
-                            this.address = null;
-                            this.addressError = true;
-                        } else {
-                            this.address = data;
-                            if (!this.city) {
-                                this.city = data.localidade + ' - ' + data.uf;
-                            }
-                            if (autoSubmit) {
-                                this.$refs.freightForm.requestSubmit();
+                        if (res.ok) {
+                            const data = await res.json();
+                            if (!data.erro) {
+                                applyAddress(data.logradouro, data.bairro, data.localidade, data.uf);
+                                this.loadingAddress = false;
+                                return;
                             }
                         }
                     } catch (e) {
-                        this.addressError = true;
-                    } finally {
-                        this.loadingAddress = false;
+                        console.warn('ViaCEP client-side failed, attempting fallback API...');
                     }
+
+                    try {
+                        const res = await fetch('/api/cep/' + digits);
+                        if (res.ok) {
+                            const data = await res.json();
+                            applyAddress(data.street, data.neighborhood, data.city, data.state);
+                            this.loadingAddress = false;
+                            return;
+                        }
+                    } catch (e) {
+                        console.error('All CEP services failed.', e);
+                    }
+
+                    this.address = null;
+                    this.addressError = true;
+                    this.loadingAddress = false;
                 },
              }"
              x-init="lookupCep(false)">
@@ -108,7 +133,8 @@
                 <p class="text-sm text-gray-600 mb-3">Informe seu CEP para preenchermos seu endereço e estimar a entrega — ou retire grátis no nosso depósito em Curitiba.</p>
                 <form x-ref="freightForm" action="{{ route('cart.freight') }}" method="post" class="flex gap-2 max-w-xs">
                     @csrf
-                    <input type="text" name="cep" x-model="cep" @input.debounce.500ms="lookupCep(true)"
+                    <input type="text" name="cep" x-model="cep" 
+                           @input="cep = cep.replace(/\D/g, '').replace(/^(\d{5})(\d)/, '$1-$2').substring(0, 9); lookupCep(true)"
                            placeholder="Seu CEP" inputmode="numeric" maxlength="9"
                            class="flex-1 border border-gray-300 rounded-lg px-3 py-2.5">
                     <button class="bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-lg px-4">Calcular</button>
@@ -151,6 +177,24 @@
                     <input type="text" name="name" placeholder="Seu nome (opcional)" value="{{ old('name') }}"
                            class="border border-gray-300 rounded-lg px-3 py-2.5">
                     <input type="tel" name="phone" placeholder="Seu WhatsApp (opcional)" value="{{ old('phone') }}"
+                           x-data="{ 
+                               val: '{{ old('phone') }}',
+                               mask(v) {
+                                   let r = v.replace(/\D/g, '').substring(0, 11);
+                                   if (r.length > 10) {
+                                       return r.replace(/^(\d{2})(\d{5})(\d{4})$/, '($1) $2-$3');
+                                   } else if (r.length > 5) {
+                                       return r.replace(/^(\d{2})(\d{4})(\d{0,4})$/, '($1) $2-$3');
+                                   } else if (r.length > 2) {
+                                       return r.replace(/^(\d{2})(\d{0,5})$/, '($1) $2');
+                                   } else if (r.length > 0) {
+                                       return r.replace(/^(\d*)$/, '($1');
+                                   }
+                                   return r;
+                               }
+                           }" 
+                           x-model="val" 
+                           @input="val = mask(val)"
                            class="border border-gray-300 rounded-lg px-3 py-2.5">
                     <input type="text" name="city" placeholder="Sua cidade (opcional)" x-model="city"
                            class="border border-gray-300 rounded-lg px-3 py-2.5">
@@ -197,9 +241,26 @@
                     </div>
                 @else
                     <p class="text-sm text-gray-600 mb-3">Sua empresa tem ficha cadastral aprovada? Informe o CNPJ para liberar o pagamento com boleto.</p>
-                    <form action="{{ route('cart.boleto.check') }}" method="post" class="flex gap-2 max-w-sm">
+                    <form action="{{ route('cart.boleto.check') }}" method="post" class="flex gap-2 max-w-sm"
+                          x-data="{
+                              val: '',
+                              mask(v) {
+                                  let r = v.replace(/\D/g, '').substring(0, 14);
+                                  if (r.length > 12) {
+                                      return r.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5');
+                                  } else if (r.length > 8) {
+                                      return r.replace(/^(\d{2})(\d{3})(\d{3})(\d{0,4})$/, '$1.$2.$3/$4');
+                                  } else if (r.length > 5) {
+                                      return r.replace(/^(\d{2})(\d{3})(\d{0,3})$/, '$1.$2.$3');
+                                  } else if (r.length > 2) {
+                                      return r.replace(/^(\d{2})(\d{0,3})$/, '$1.$2');
+                                  }
+                                  return r;
+                              }
+                          }">
                         @csrf
                         <input type="text" name="cnpj" placeholder="CNPJ da empresa" inputmode="numeric"
+                               x-model="val" @input="val = mask(val)"
                                class="flex-1 border border-gray-300 rounded-lg px-3 py-2.5">
                         <button class="bg-ink hover:bg-black text-white font-bold rounded-lg px-4">Verificar</button>
                     </form>

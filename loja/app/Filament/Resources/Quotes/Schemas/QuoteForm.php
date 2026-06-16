@@ -2,6 +2,8 @@
 
 namespace App\Filament\Resources\Quotes\Schemas;
 
+use App\Models\CreditApplication;
+use App\Models\Customer;
 use App\Models\PaymentMethod;
 use App\Models\Quote;
 use Filament\Forms\Components\DatePicker;
@@ -10,6 +12,7 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 
 class QuoteForm
@@ -21,27 +24,101 @@ class QuoteForm
                 Section::make('Cliente e validade')
                     ->schema([
                         Select::make('customer_id')
-                            ->label('Cliente')
-                            ->relationship('customer', 'name')
-                            ->searchable()
+                            ->label('Cliente (empresa / razão social)')
+                            ->relationship('customer', 'company')
+                            ->getOptionLabelFromRecordUsing(fn (Customer $r) => ($r->company ?: $r->name).($r->company && $r->name ? ' — '.$r->name : ''))
+                            ->searchable(['company', 'name', 'document'])
                             ->preload()
                             ->createOptionForm([
-                                TextInput::make('name')->label('Nome do contato')->required(),
-                                TextInput::make('company')->label('Empresa'),
+                                TextInput::make('company')->label('Empresa / Razão social')->required(),
+                                TextInput::make('name')->label('Nome do contato'),
                                 TextInput::make('phone')->label('WhatsApp')->tel()->required(),
                                 TextInput::make('email')->label('E-mail')->email(),
                                 TextInput::make('city')->label('Cidade')->default('Curitiba'),
                             ])
                             ->required(),
+
                         DatePicker::make('valid_until')
                             ->label('Válido até')
                             ->default(now()->addDays(7))
                             ->displayFormat('d/m/Y'),
+
                         Select::make('status')
                             ->label('Status')
                             ->options(Quote::STATUSES)
                             ->default('rascunho')
                             ->required(),
+
+                        Select::make('_ficha_id')
+                            ->label('Importar de Ficha Cadastral')
+                            ->placeholder('Buscar por empresa, CNPJ ou contato...')
+                            ->helperText('Ao selecionar, os dados da ficha são importados automaticamente no campo Cliente acima.')
+                            ->options(fn () => CreditApplication::whereIn('status', ['pendente', 'aprovado'])
+                                ->orderBy('company_name')
+                                ->get()
+                                ->mapWithKeys(fn ($f) => [
+                                    $f->id => $f->company_name
+                                        .($f->trade_name ? ' ('.$f->trade_name.')' : '')
+                                        .($f->contact_name ? ' — '.$f->contact_name : '')
+                                        .' ['.CreditApplication::STATUSES[$f->status].']',
+                                ])
+                                ->toArray())
+                            ->searchable()
+                            ->getSearchResultsUsing(fn (string $search) =>
+                                CreditApplication::whereIn('status', ['pendente', 'aprovado'])
+                                    ->where(fn ($q) => $q
+                                        ->where('company_name', 'like', "%{$search}%")
+                                        ->orWhere('trade_name', 'like', "%{$search}%")
+                                        ->orWhere('contact_name', 'like', "%{$search}%")
+                                        ->orWhere('document', 'like', "%{$search}%"))
+                                    ->limit(20)
+                                    ->get()
+                                    ->mapWithKeys(fn ($f) => [
+                                        $f->id => $f->company_name
+                                            .($f->contact_name ? ' — '.$f->contact_name : '')
+                                            .' ['.CreditApplication::STATUSES[$f->status].']',
+                                    ])
+                                    ->toArray())
+                            ->live()
+                            ->afterStateUpdated(function (Set $set, ?string $state) {
+                                if (! $state) {
+                                    return;
+                                }
+
+                                $ficha = CreditApplication::find($state);
+                                if (! $ficha) {
+                                    return;
+                                }
+
+                                // Ficha já aprovada tem Customer vinculado — usa direto
+                                if ($ficha->customer_id) {
+                                    $set('customer_id', (string) $ficha->customer_id);
+                                    $set('_ficha_id', null);
+                                    return;
+                                }
+
+                                // Cria (ou encontra) Customer a partir dos dados da ficha
+                                $customer = Customer::firstOrCreate(
+                                    ['document' => $ficha->document],
+                                    [
+                                        'company' => $ficha->company_name,
+                                        'name'    => $ficha->contact_name ?? $ficha->company_name,
+                                        'phone'   => $ficha->phone ?? '',
+                                        'email'   => $ficha->email,
+                                        'city'    => $ficha->city,
+                                    ]
+                                );
+
+                                // Vincula o customer à ficha se ela for aprovada
+                                if ($ficha->status === 'aprovado') {
+                                    $ficha->forceFill(['customer_id' => $customer->id])->save();
+                                }
+
+                                $set('customer_id', (string) $customer->id);
+                                $set('_ficha_id', null);
+                            })
+                            ->dehydrated(false)
+                            ->columnSpanFull(),
                     ])
                     ->columns(3),
 

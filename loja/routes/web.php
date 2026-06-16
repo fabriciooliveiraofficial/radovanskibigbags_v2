@@ -6,7 +6,11 @@ use App\Http\Controllers\EmailTrackingController;
 use App\Http\Controllers\QuotePublicController;
 use App\Http\Controllers\SeoController;
 use App\Http\Controllers\StoreController;
+use App\Http\Controllers\CepController;
 use Illuminate\Support\Facades\Route;
+
+// Busca de CEP com fallback
+Route::get('/api/cep/{cep}', [CepController::class, 'lookup'])->name('api.cep.lookup');
 
 // Loja
 Route::get('/', [StoreController::class, 'home'])->name('home');

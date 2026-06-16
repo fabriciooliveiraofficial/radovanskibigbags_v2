@@ -27,6 +27,10 @@ class CreditApplicationsTable
                 TextColumn::make('contact_name')
                     ->label('Contato')
                     ->searchable(),
+                TextColumn::make('customer.name')
+                    ->label('Cliente vinculado')
+                    ->placeholder('—')
+                    ->searchable(),
                 TextColumn::make('phone')
                     ->label('WhatsApp'),
                 TextColumn::make('status')
