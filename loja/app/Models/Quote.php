@@ -50,6 +50,21 @@ class Quote extends Model
             $quote->public_token ??= Str::random(12);
         });
 
+        static::saving(function (Quote $quote) {
+            if ($quote->isDirty('status')) {
+                $status = $quote->status;
+                if (in_array($status, ['enviado', 'visualizado', 'aprovado', 'recusado'])) {
+                    $quote->sent_at ??= now();
+                }
+                if (in_array($status, ['visualizado', 'aprovado', 'recusado'])) {
+                    $quote->viewed_at ??= now();
+                }
+                if ($status === 'aprovado') {
+                    $quote->approved_at ??= now();
+                }
+            }
+        });
+
         static::saved(function (Quote $quote) {
             $quote->recalculateTotals();
         });
