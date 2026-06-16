@@ -3,7 +3,7 @@
 namespace App\Filament\Widgets;
 
 use App\Models\Quote;
-use Filament\Tables\Actions\Action;
+use Filament\Actions\Action;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget as BaseWidget;
