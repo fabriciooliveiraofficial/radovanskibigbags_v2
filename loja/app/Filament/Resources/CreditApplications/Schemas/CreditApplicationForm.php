@@ -59,7 +59,7 @@ class CreditApplicationForm
                     ->tel()
                     ->required()
                     ->extraInputAttributes([
-                        'x-mask:dynamic' => '$input.replace(/\D/g, "").length > 10 ? "(99) 99999-9999" : "(99) 9999-9999"',
+                        'x-mask:dynamic' => '$input.replace(/\D/g, \'\').length > 10 ? \'(99) 99999-9999\' : \'(99) 9999-9999\'',
                     ]),
                 TextInput::make('email')
                     ->label('E-mail')

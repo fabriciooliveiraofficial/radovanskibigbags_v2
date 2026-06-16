@@ -49,6 +49,10 @@ class Quote extends Model
             $quote->number       ??= static::nextNumber($quote->type);
             $quote->public_token ??= Str::random(12);
         });
+
+        static::saved(function (Quote $quote) {
+            $quote->recalculateTotals();
+        });
     }
 
     public static function nextNumber(string $type = 'orcamento'): string
