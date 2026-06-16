@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Quote;
 use App\Models\Setting;
+use App\Services\Cart;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -15,6 +16,8 @@ use App\Mail\QuoteApprovedAlert;
 
 class QuotePublicController extends Controller
 {
+    public function __construct(private readonly Cart $cart) {}
+
     private function findQuote(string $token): Quote
     {
         return Quote::with(['items', 'customer'])
@@ -38,8 +41,10 @@ class QuotePublicController extends Controller
             $quote->forceFill(['status' => 'expirado'])->saveQuietly();
         }
 
-        return view('quote.public', [
-            'quote' => $quote->fresh(['items', 'customer']),
+        $view = $quote->isPedido() ? 'quote.pedido-public' : 'quote.public';
+
+        return view($view, [
+            'quote' => $quote->fresh(['items', 'customer', 'emailLogs']),
         ]);
     }
 
@@ -47,10 +52,12 @@ class QuotePublicController extends Controller
     {
         $quote = $this->findQuote($token);
 
-        $pdf = Pdf::loadView('quote.pdf', ['quote' => $quote])
-            ->setPaper('a4');
+        $view     = $quote->isPedido() ? 'quote.pedido-pdf' : 'quote.pdf';
+        $filename = ($quote->isPedido() ? 'pedido-' : 'orcamento-').$quote->number.'.pdf';
 
-        return $pdf->download('orcamento-'.$quote->number.'.pdf');
+        $pdf = Pdf::loadView($view, ['quote' => $quote])->setPaper('a4');
+
+        return $pdf->download($filename);
     }
 
     public function approve(Request $request, string $token): RedirectResponse
@@ -79,10 +86,27 @@ class QuotePublicController extends Controller
             $storePhone = '55'.$storePhone;
         }
 
-        $message = "Olá! APROVO o orçamento {$quote->number} no valor de R$ "
+        $tipo    = $quote->isPedido() ? 'pedido' : 'orçamento';
+        $message = "Olá! APROVO o {$tipo} {$quote->number} no valor de R$ "
             .number_format((float) $quote->total, 2, ',', '.')
             .'. Como seguimos?';
 
         return redirect()->away('https://wa.me/'.$storePhone.'?text='.rawurlencode($message));
+    }
+
+    public function repeat(string $token): RedirectResponse
+    {
+        $quote = $this->findQuote($token);
+
+        $this->cart->clear();
+
+        foreach ($quote->items as $item) {
+            if ($item->product_id) {
+                $this->cart->add($item->product_id, $item->qty, $item->product_variant_id);
+            }
+        }
+
+        return redirect()->route('cart.index')
+            ->with('status', 'Itens do pedido '.$quote->number.' adicionados. Ajuste as quantidades se precisar.');
     }
 }

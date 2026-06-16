@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\CreditApplicationController;
+use App\Http\Controllers\EmailTrackingController;
 use App\Http\Controllers\QuotePublicController;
 use App\Http\Controllers\SeoController;
 use App\Http\Controllers\StoreController;
@@ -40,6 +41,10 @@ Route::post('/ficha-cadastral', [CreditApplicationController::class, 'store'])->
 Route::get('/orcamento/{token}', [QuotePublicController::class, 'show'])->name('quote.public');
 Route::get('/orcamento/{token}/pdf', [QuotePublicController::class, 'pdf'])->name('quote.pdf');
 Route::post('/orcamento/{token}/aprovar', [QuotePublicController::class, 'approve'])->name('quote.approve');
+Route::get('/orcamento/{token}/repetir', [QuotePublicController::class, 'repeat'])->name('quote.repeat');
+
+// Pixel de rastreio de e-mail
+Route::get('/e/{token}', [EmailTrackingController::class, 'pixel'])->name('email.pixel');
 
 // SEO
 Route::get('/sitemap.xml', [SeoController::class, 'sitemap'])->name('sitemap');

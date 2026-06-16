@@ -19,9 +19,9 @@ class Quote extends Model
     ];
 
     public const SHIPPING_METHODS = [
-        'retirada'       => 'Retirada no local',
+        'retirada'        => 'Retirada no local',
         'entrega_propria' => 'Entrega própria',
-        'transportadora' => 'Transportadora',
+        'transportadora'  => 'Transportadora',
     ];
 
     protected $guarded = [];
@@ -29,41 +29,55 @@ class Quote extends Model
     protected function casts(): array
     {
         return [
-            'valid_until' => 'date',
-            'subtotal' => 'decimal:2',
+            'valid_until'    => 'date',
+            'subtotal'       => 'decimal:2',
             'discount_value' => 'decimal:2',
-            'shipping_cost' => 'decimal:2',
-            'total' => 'decimal:2',
-            'sent_at' => 'datetime',
-            'viewed_at' => 'datetime',
-            'approved_at' => 'datetime',
-            'sent_channels' => 'array',
+            'shipping_cost'  => 'decimal:2',
+            'total_weight_kg'=> 'decimal:3',
+            'total'          => 'decimal:2',
+            'sent_at'        => 'datetime',
+            'viewed_at'      => 'datetime',
+            'approved_at'    => 'datetime',
+            'sent_channels'  => 'array',
         ];
     }
 
     protected static function booted(): void
     {
         static::creating(function (Quote $quote) {
-            $quote->number ??= static::nextNumber();
+            $quote->type         ??= 'orcamento';
+            $quote->number       ??= static::nextNumber($quote->type);
             $quote->public_token ??= Str::random(12);
         });
     }
 
-    public static function nextNumber(): string
+    public static function nextNumber(string $type = 'orcamento'): string
     {
-        $year = now()->year;
-        $last = static::where('number', 'like', "ORC-{$year}-%")
+        $prefix = $type === 'pedido' ? 'PED' : 'ORC';
+        $year   = now()->year;
+
+        $last = static::where('number', 'like', "{$prefix}-{$year}-%")
             ->orderByDesc('number')
             ->value('number');
 
         $seq = $last ? ((int) Str::afterLast($last, '-')) + 1 : 1;
 
-        return sprintf('ORC-%d-%04d', $year, $seq);
+        return sprintf('%s-%d-%04d', $prefix, $year, $seq);
+    }
+
+    public function isPedido(): bool
+    {
+        return $this->type === 'pedido';
     }
 
     public function customer(): BelongsTo
     {
         return $this->belongsTo(Customer::class);
+    }
+
+    public function quoteRequest(): BelongsTo
+    {
+        return $this->belongsTo(QuoteRequest::class);
     }
 
     public function items(): HasMany
@@ -76,9 +90,30 @@ class Quote extends Model
         return $this->hasMany(QuoteEvent::class)->latest('created_at');
     }
 
+    public function emailLogs(): HasMany
+    {
+        return $this->hasMany(EmailLog::class)->latest();
+    }
+
     public function publicUrl(): string
     {
         return route('quote.public', $this->public_token);
+    }
+
+    public function totalVolumeCbm(): ?float
+    {
+        $vol = 0.0;
+        foreach ($this->items as $item) {
+            $p = $item->product;
+            if ($p && $p->width_cm && $p->height_cm) {
+                $w = (float) $p->width_cm / 100;
+                $d = $p->depth_cm ? (float) $p->depth_cm / 100 : $w;
+                $h = (float) $p->height_cm / 100;
+                $vol += $w * $d * $h * $item->qty;
+            }
+        }
+
+        return $vol > 0 ? round($vol, 3) : null;
     }
 
     public function recalculateTotals(): void
@@ -87,13 +122,20 @@ class Quote extends Model
 
         $discount = match ($this->discount_type) {
             'percent' => $subtotal * ((float) $this->discount_value / 100),
-            'fixed' => (float) $this->discount_value,
-            default => 0.0,
+            'fixed'   => (float) $this->discount_value,
+            default   => 0.0,
         };
 
+        $totalWeight = (float) $this->items()->getModel()->newQuery()
+            ->where('quote_id', $this->id)
+            ->join('products', 'products.id', '=', 'quote_items.product_id')
+            ->selectRaw('SUM(quote_items.qty * COALESCE(quote_items.weight_kg, products.weight_kg, 0)) as w')
+            ->value('w');
+
         $this->forceFill([
-            'subtotal' => $subtotal,
-            'total' => max(0, $subtotal - $discount + (float) $this->shipping_cost),
+            'subtotal'        => $subtotal,
+            'total'           => max(0, $subtotal - $discount + (float) $this->shipping_cost),
+            'total_weight_kg' => $totalWeight > 0 ? $totalWeight : null,
         ])->saveQuietly();
     }
 
@@ -101,8 +143,8 @@ class Quote extends Model
     {
         return match ($this->discount_type) {
             'percent' => (float) $this->subtotal * ((float) $this->discount_value / 100),
-            'fixed' => (float) $this->discount_value,
-            default => 0.0,
+            'fixed'   => (float) $this->discount_value,
+            default   => 0.0,
         };
     }
 

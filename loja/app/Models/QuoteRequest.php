@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class QuoteRequest extends Model
 {
@@ -33,5 +34,10 @@ class QuoteRequest extends Model
     public function creditApplication(): BelongsTo
     {
         return $this->belongsTo(CreditApplication::class);
+    }
+
+    public function quote(): HasOne
+    {
+        return $this->hasOne(Quote::class);
     }
 }
