@@ -6,6 +6,8 @@ use App\Models\CreditApplication;
 use App\Models\Customer;
 use App\Models\PaymentMethod;
 use App\Models\Quote;
+use App\Services\Shipping\FreightCalculator;
+use Filament\Actions\Action;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -14,41 +16,68 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
+use Illuminate\Database\Eloquent\Model;
 
 class QuoteForm
 {
     public static function configure(Schema $schema): Schema
     {
+        $updateFreight = function (Set $set, Get $get, ?Model $record = null) {
+            $method = $get('shipping_method');
+            if (!$method || $method === 'retirada') {
+                $set('shipping_cost', 0);
+                $set('shipping_deadline', null);
+                $set('shipping_carrier', null);
+                return;
+            }
+
+            $customerId = $get('customer_id');
+            if (!$customerId) {
+                return;
+            }
+
+            $customer = Customer::find($customerId);
+            if (!$customer || !$customer->cep) {
+                return;
+            }
+
+            $items = [];
+            if ($record && $record->exists) {
+                foreach ($record->items as $item) {
+                    $items[] = [
+                        'weight_kg' => (float) ($item->weight_kg ?? ($item->product->weight_kg ?? 0.5)),
+                        'qty' => (int) $item->qty,
+                    ];
+                }
+            }
+
+            try {
+                $calculator = app(FreightCalculator::class);
+                $result = $calculator->quote($customer->cep, $items);
+
+                if (!empty($result['options'])) {
+                    foreach ($result['options'] as $option) {
+                        if ($option['method'] === $method) {
+                            $set('shipping_cost', $option['cost'] ?? 0);
+                            $set('shipping_deadline', $option['deadline']);
+                            $set('shipping_carrier', $option['carrier']);
+                            return;
+                        }
+                    }
+                }
+
+                $set('shipping_cost', null);
+                $set('shipping_deadline', null);
+                $set('shipping_carrier', null);
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error("Erro ao calcular frete no admin: " . $e->getMessage());
+            }
+        };
+
         return $schema
             ->components([
                 Section::make('Cliente e validade')
                     ->schema([
-                        Select::make('customer_id')
-                            ->label('Cliente (empresa / razão social)')
-                            ->relationship('customer', 'company')
-                            ->getOptionLabelFromRecordUsing(fn (Customer $r) => ($r->company ?: $r->name).($r->company && $r->name ? ' — '.$r->name : ''))
-                            ->searchable(['company', 'name', 'document'])
-                            ->preload()
-                            ->createOptionForm([
-                                TextInput::make('company')->label('Empresa / Razão social')->required(),
-                                TextInput::make('name')->label('Nome do contato'),
-                                TextInput::make('phone')->label('WhatsApp')->tel()->required(),
-                                TextInput::make('email')->label('E-mail')->email(),
-                                TextInput::make('city')->label('Cidade')->default('Curitiba'),
-                            ])
-                            ->required(),
-
-                        DatePicker::make('valid_until')
-                            ->label('Válido até')
-                            ->default(now()->addDays(7))
-                            ->displayFormat('d/m/Y'),
-
-                        Select::make('status')
-                            ->label('Status')
-                            ->options(Quote::STATUSES)
-                            ->default('rascunho')
-                            ->required(),
-
                         Select::make('_ficha_id')
                             ->label('Importar de Ficha Cadastral')
                             ->placeholder('Buscar por empresa, CNPJ ou contato...')
@@ -80,7 +109,7 @@ class QuoteForm
                                     ])
                                     ->toArray())
                             ->live()
-                            ->afterStateUpdated(function (Set $set, ?string $state) {
+                            ->afterStateUpdated(function (Set $set, Get $get, ?Model $record, ?string $state) use ($updateFreight) {
                                 if (! $state) {
                                     return;
                                 }
@@ -92,8 +121,9 @@ class QuoteForm
 
                                 // Ficha já aprovada tem Customer vinculado — usa direto
                                 if ($ficha->customer_id) {
-                                    $set('customer_id', (string) $ficha->customer_id);
+                                    $set('customer_id', $ficha->customer_id);
                                     $set('_ficha_id', null);
+                                    $updateFreight($set, $get, $record);
                                     return;
                                 }
 
@@ -114,11 +144,46 @@ class QuoteForm
                                     $ficha->forceFill(['customer_id' => $customer->id])->save();
                                 }
 
-                                $set('customer_id', (string) $customer->id);
+                                $set('customer_id', $customer->id);
                                 $set('_ficha_id', null);
+                                $updateFreight($set, $get, $record);
                             })
                             ->dehydrated(false)
                             ->columnSpanFull(),
+
+                        Select::make('customer_id')
+                            ->label('Cliente (empresa / razão social)')
+                            ->options(fn () => Customer::orderBy('company')->orderBy('name')
+                                ->get()
+                                ->mapWithKeys(fn ($c) => [
+                                    $c->id => ($c->company ?: $c->name)
+                                        .($c->company && $c->name ? ' — '.$c->name : ''),
+                                ]))
+                            ->searchable()
+                            ->required()
+                            ->createOptionForm([
+                                TextInput::make('company')->label('Empresa / Razão social')->required(),
+                                TextInput::make('name')->label('Nome do contato'),
+                                TextInput::make('phone')->label('WhatsApp')->tel()->required(),
+                                TextInput::make('email')->label('E-mail')->email(),
+                                TextInput::make('city')->label('Cidade')->default('Curitiba'),
+                            ])
+                            ->createOptionUsing(fn (array $data) => Customer::create($data)->id)
+                            ->live()
+                            ->afterStateUpdated(function (Set $set, Get $get, ?Model $record) use ($updateFreight) {
+                                $updateFreight($set, $get, $record);
+                            }),
+
+                        DatePicker::make('valid_until')
+                            ->label('Válido até')
+                            ->default(now()->addDays(7))
+                            ->displayFormat('d/m/Y'),
+
+                        Select::make('status')
+                            ->label('Status')
+                            ->options(Quote::STATUSES)
+                            ->default('rascunho')
+                            ->required(),
                     ])
                     ->columns(3),
 
@@ -128,14 +193,25 @@ class QuoteForm
                             ->label('Modalidade')
                             ->options(Quote::SHIPPING_METHODS)
                             ->default('retirada')
-                            ->live(),
+                            ->live()
+                            ->afterStateUpdated(function (Set $set, Get $get, ?Model $record) use ($updateFreight) {
+                                $updateFreight($set, $get, $record);
+                            }),
                         TextInput::make('shipping_cost')
                             ->label('Valor do frete (R$)')
                             ->numeric()
                             ->prefix('R$')
                             ->default(0)
                             ->disabled(fn (Get $get) => $get('shipping_method') === 'retirada')
-                            ->dehydrated(),
+                            ->dehydrated()
+                            ->hintAction(
+                                Action::make('recalculateShipping')
+                                    ->label('Calcular')
+                                    ->icon('heroicon-m-arrow-path')
+                                    ->action(function (Set $set, Get $get, ?Model $record) use ($updateFreight) {
+                                        $updateFreight($set, $get, $record);
+                                    })
+                            ),
                         TextInput::make('shipping_deadline')
                             ->label('Prazo')
                             ->placeholder('Ex: 1 a 2 dias úteis'),
