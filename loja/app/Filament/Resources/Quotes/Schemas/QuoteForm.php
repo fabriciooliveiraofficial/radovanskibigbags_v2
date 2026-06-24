@@ -5,10 +5,13 @@ namespace App\Filament\Resources\Quotes\Schemas;
 use App\Models\CreditApplication;
 use App\Models\Customer;
 use App\Models\PaymentMethod;
+use App\Models\Product;
+use App\Models\ProductVariant;
 use App\Models\Quote;
 use App\Services\Shipping\FreightCalculator;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -246,6 +249,75 @@ class QuoteForm
                             ->helperText('Cadastre opções no menu "Formas de pagamento"'),
                     ])
                     ->columns(3),
+
+                Section::make('Itens do orçamento')
+                    ->schema([
+                        Repeater::make('items')
+                            ->label('')
+                            ->relationship()
+                            ->orderColumn('sort_order')
+                            ->addActionLabel('Adicionar item')
+                            ->defaultItems(0)
+                            ->collapsible()
+                            ->itemLabel(fn (array $state): ?string => $state['description'] ?? null)
+                            ->schema([
+                                Select::make('product_id')
+                                    ->label('Produto do catálogo (opcional)')
+                                    ->options(fn () => Product::orderBy('name')->pluck('name', 'id')->all())
+                                    ->searchable()
+                                    ->live()
+                                    ->afterStateUpdated(function (Set $set, ?string $state) {
+                                        if (! $state) {
+                                            return;
+                                        }
+                                        $product = Product::find($state);
+                                        if ($product) {
+                                            $set('description', $product->name.($product->dimensionsLabel() ? ' — '.$product->dimensionsLabel() : ''));
+                                            if ($product->price !== null) {
+                                                $set('unit_price', (string) $product->price);
+                                            }
+                                        }
+                                    })
+                                    ->columnSpan(2),
+                                Select::make('product_variant_id')
+                                    ->label('Variação')
+                                    ->options(fn (Get $get) => $get('product_id')
+                                        ? ProductVariant::where('product_id', $get('product_id'))->pluck('name', 'id')->all()
+                                        : [])
+                                    ->live()
+                                    ->afterStateUpdated(function (Set $set, Get $get, ?string $state) {
+                                        if (! $state) {
+                                            return;
+                                        }
+                                        $variant = ProductVariant::find($state);
+                                        if ($variant) {
+                                            $set('description', $variant->product->name.' — '.$variant->name);
+                                            if ($variant->effectivePrice() !== null) {
+                                                $set('unit_price', (string) $variant->effectivePrice());
+                                            }
+                                        }
+                                    })
+                                    ->visible(fn (Get $get) => filled($get('product_id')))
+                                    ->columnSpan(2),
+                                TextInput::make('description')
+                                    ->label('Descrição do item')
+                                    ->helperText('Texto que aparece no orçamento. Pode ser um item livre, sem produto do catálogo.')
+                                    ->required()
+                                    ->columnSpan(2),
+                                TextInput::make('qty')
+                                    ->label('Quantidade')
+                                    ->numeric()
+                                    ->default(1)
+                                    ->required(),
+                                TextInput::make('unit_price')
+                                    ->label('Preço unitário (R$)')
+                                    ->numeric()
+                                    ->prefix('R$')
+                                    ->required(),
+                            ])
+                            ->columns(2),
+                    ])
+                    ->collapsible(),
 
                 Section::make('Observações')
                     ->schema([
