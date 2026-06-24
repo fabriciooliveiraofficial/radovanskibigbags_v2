@@ -50,18 +50,32 @@
         </div>
     @endif
 
-    {{-- ===== CLIENTE ===== --}}
-    <div class="bg-white border-x border-gray-200 px-5 py-4">
-        <p class="text-xs font-bold uppercase text-gray-400 mb-1">Cliente</p>
-        <p class="font-bold">{{ $quote->customer?->name }}@if($quote->customer?->company) — {{ $quote->customer->company }}@endif</p>
-        @if($quote->customer?->document)
-            <p class="text-sm text-gray-500">CNPJ/CPF: {{ $quote->customer->document }}</p>
-        @endif
-        @if($quote->customer?->phone)
-            <p class="text-sm text-gray-500">WhatsApp: {{ $quote->customer->phone }}</p>
-        @endif
-        @if($quote->customer?->city)
-            <p class="text-sm text-gray-500">{{ $quote->customer->city }}@if($quote->customer->state) — {{ $quote->customer->state }}@endif</p>
+    {{-- ===== CLIENTE E ENTREGA ===== --}}
+    <div class="bg-white border-x border-gray-200 px-5 py-4 flex flex-col md:flex-row gap-4 justify-between">
+        <div>
+            <p class="text-xs font-bold uppercase text-gray-400 mb-1">Cliente</p>
+            <p class="font-bold">{{ $quote->customer?->name }}@if($quote->customer?->company) — {{ $quote->customer->company }}@endif</p>
+            @if($quote->customer?->document)
+                <p class="text-sm text-gray-500">CNPJ/CPF: {{ $quote->customer->document }}</p>
+            @endif
+            @if($quote->customer?->phone)
+                <p class="text-sm text-gray-500">WhatsApp: {{ $quote->customer->phone }}</p>
+            @endif
+            @if($quote->customer?->city)
+                <p class="text-sm text-gray-500">{{ $quote->customer->city }}@if($quote->customer->state) — {{ $quote->customer->state }}@endif</p>
+            @endif
+        </div>
+        @if($quote->shipping_method !== 'retirada' && $quote->formatted_delivery_address)
+            <div class="md:text-right">
+                <p class="text-xs font-bold uppercase text-gray-400 mb-1">Endereço de Entrega</p>
+                @if($quote->google_maps_link)
+                    <a href="{{ $quote->google_maps_link }}" target="_blank" rel="noopener" class="text-brand-700 hover:underline font-bold text-sm block">
+                        {{ $quote->formatted_delivery_address }} ↗
+                    </a>
+                @else
+                    <p class="text-sm text-gray-600 font-bold">{{ $quote->formatted_delivery_address }}</p>
+                @endif
+            </div>
         @endif
     </div>
 
@@ -76,6 +90,7 @@
                         <th class="text-left px-2 py-2.5">Produto / Especificação</th>
                         <th class="text-center px-2 py-2.5">Qtde</th>
                         <th class="text-right px-2 py-2.5">Unit.</th>
+                        <th class="text-right px-2 py-2.5">Desconto</th>
                         <th class="text-right px-3 py-2.5 rounded-r-lg">Total</th>
                     </tr>
                 </thead>
@@ -91,6 +106,16 @@
                             </td>
                             <td class="px-2 py-2.5 text-center font-bold">{{ $item->qty }}</td>
                             <td class="px-2 py-2.5 text-right text-gray-600 whitespace-nowrap">{{ format_brl($item->unit_price) }}</td>
+                            <td class="px-2 py-2.5 text-right whitespace-nowrap text-red-600">
+                                @if($item->discountAmount() > 0)
+                                    − {{ format_brl($item->discountAmount()) }}
+                                    @if($item->discount_type === 'percent')
+                                        <span class="text-gray-400">({{ rtrim(rtrim(number_format($item->discount_value, 2, ',', '.'), '0'), ',') }}%)</span>
+                                    @endif
+                                @else
+                                    <span class="text-gray-300">—</span>
+                                @endif
+                            </td>
                             <td class="px-3 py-2.5 text-right font-bold whitespace-nowrap">{{ format_brl($item->total) }}</td>
                         </tr>
                     @endforeach

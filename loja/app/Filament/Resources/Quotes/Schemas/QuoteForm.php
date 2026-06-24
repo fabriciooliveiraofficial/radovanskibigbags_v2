@@ -127,6 +127,16 @@ class QuoteForm
                                     $set('customer_id', $ficha->customer_id);
                                     $set('_ficha_id', null);
                                     $updateFreight($set, $get, $record);
+
+                                    $customer = Customer::find($ficha->customer_id);
+                                    if ($customer) {
+                                        $addressParts = array_filter([
+                                            $customer->address,
+                                            $customer->city ? "{$customer->city} - {$customer->state}" : null,
+                                            $customer->cep ? "CEP {$customer->cep}" : null,
+                                        ]);
+                                        $set('delivery_address', implode(', ', $addressParts));
+                                    }
                                     return;
                                 }
 
@@ -139,6 +149,9 @@ class QuoteForm
                                         'phone'   => $ficha->phone ?? '',
                                         'email'   => $ficha->email,
                                         'city'    => $ficha->city,
+                                        'address' => $ficha->address,
+                                        'cep'     => $ficha->cep,
+                                        'state'   => $ficha->state,
                                     ]
                                 );
 
@@ -150,6 +163,13 @@ class QuoteForm
                                 $set('customer_id', $customer->id);
                                 $set('_ficha_id', null);
                                 $updateFreight($set, $get, $record);
+
+                                $addressParts = array_filter([
+                                    $customer->address,
+                                    $customer->city ? "{$customer->city} - {$customer->state}" : null,
+                                    $customer->cep ? "CEP {$customer->cep}" : null,
+                                ]);
+                                $set('delivery_address', implode(', ', $addressParts));
                             })
                             ->dehydrated(false)
                             ->columnSpanFull(),
@@ -169,12 +189,29 @@ class QuoteForm
                                 TextInput::make('name')->label('Nome do contato'),
                                 TextInput::make('phone')->label('WhatsApp')->tel()->required(),
                                 TextInput::make('email')->label('E-mail')->email(),
+                                TextInput::make('address')->label('Endereço'),
                                 TextInput::make('city')->label('Cidade')->default('Curitiba'),
+                                TextInput::make('state')->label('Estado')->default('PR'),
+                                TextInput::make('cep')->label('CEP'),
                             ])
                             ->createOptionUsing(fn (array $data) => Customer::create($data)->id)
                             ->live()
                             ->afterStateUpdated(function (Set $set, Get $get, ?Model $record) use ($updateFreight) {
                                 $updateFreight($set, $get, $record);
+
+                                // Auto-fill delivery address
+                                $customerId = $get('customer_id');
+                                if ($customerId) {
+                                    $customer = Customer::find($customerId);
+                                    if ($customer) {
+                                        $addressParts = array_filter([
+                                            $customer->address,
+                                            $customer->city ? "{$customer->city} - {$customer->state}" : null,
+                                            $customer->cep ? "CEP {$customer->cep}" : null,
+                                        ]);
+                                        $set('delivery_address', implode(', ', $addressParts));
+                                    }
+                                }
                             }),
 
                         DatePicker::make('valid_until')
@@ -221,6 +258,11 @@ class QuoteForm
                         TextInput::make('shipping_carrier')
                             ->label('Transportadora')
                             ->visible(fn (Get $get) => $get('shipping_method') === 'transportadora'),
+                        Textarea::make('delivery_address')
+                            ->label('Endereço de entrega')
+                            ->placeholder('Rua..., Número..., Bairro..., Cidade..., Estado..., CEP...')
+                            ->rows(2)
+                            ->columnSpanFull(),
                     ])
                     ->columns(4),
 
@@ -314,6 +356,19 @@ class QuoteForm
                                     ->numeric()
                                     ->prefix('R$')
                                     ->required(),
+                                Select::make('discount_type')
+                                    ->label('Tipo de desconto')
+                                    ->options([
+                                        'percent' => 'Percentual (%)',
+                                        'fixed' => 'Valor fixo (R$)',
+                                    ])
+                                    ->placeholder('Sem desconto')
+                                    ->live(),
+                                TextInput::make('discount_value')
+                                    ->label('Desconto do item')
+                                    ->numeric()
+                                    ->default(0)
+                                    ->visible(fn (Get $get) => filled($get('discount_type'))),
                             ])
                             ->columns(2),
                     ])

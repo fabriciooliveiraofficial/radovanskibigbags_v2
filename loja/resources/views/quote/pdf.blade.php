@@ -55,6 +55,19 @@
     @if($quote->customer?->phone)<span class="muted">WhatsApp: {{ $quote->customer->phone }}</span>@endif
 </div>
 
+@if($quote->shipping_method !== 'retirada' && $quote->formatted_delivery_address)
+<div class="section-title">Endereço de Entrega</div>
+<div>
+    @if($quote->google_maps_link)
+        <a href="{{ $quote->google_maps_link }}" target="_blank" style="color: #2E7D32; font-weight: bold; text-decoration: underline;">
+            {{ $quote->formatted_delivery_address }}
+        </a>
+    @else
+        {{ $quote->formatted_delivery_address }}
+    @endif
+</div>
+@endif
+
 <div class="section-title">Itens</div>
 <table class="items">
     <thead>
@@ -63,6 +76,7 @@
             <th>Descrição</th>
             <th class="center" style="width: 50px;">Qtde</th>
             <th class="num" style="width: 90px;">Unitário</th>
+            <th class="num" style="width: 90px;">Desconto</th>
             <th class="num" style="width: 90px;">Total</th>
         </tr>
     </thead>
@@ -73,6 +87,16 @@
                 <td>{{ $item->description }}</td>
                 <td class="center">{{ $item->qty }}</td>
                 <td class="num">{{ format_brl($item->unit_price) }}</td>
+                <td class="num" style="color: #c0392b;">
+                    @if($item->discountAmount() > 0)
+                        − {{ format_brl($item->discountAmount()) }}
+                        @if($item->discount_type === 'percent')
+                            <span class="muted">({{ rtrim(rtrim(number_format($item->discount_value, 2, ',', '.'), '0'), ',') }}%)</span>
+                        @endif
+                    @else
+                        —
+                    @endif
+                </td>
                 <td class="num">{{ format_brl($item->total) }}</td>
             </tr>
         @endforeach

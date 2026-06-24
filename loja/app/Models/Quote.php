@@ -195,4 +195,35 @@ class Quote extends Model
         $this->forceFill(['status' => 'aprovado', 'approved_at' => now()])->saveQuietly();
         $this->events()->create(['type' => 'approved', 'meta' => $meta]);
     }
+
+    public function getFormattedDeliveryAddressAttribute(): ?string
+    {
+        if ($this->delivery_address) {
+            return $this->delivery_address;
+        }
+
+        if ($this->customer) {
+            $customer = $this->customer;
+            $addressParts = array_filter([
+                $customer->address,
+                $customer->city ? "{$customer->city} - {$customer->state}" : null,
+                $customer->cep ? "CEP {$customer->cep}" : null,
+            ]);
+            return implode(', ', $addressParts);
+        }
+
+        return null;
+    }
+
+    public function getGoogleMapsLinkAttribute(): ?string
+    {
+        $address = $this->formatted_delivery_address;
+
+        if (!$address) {
+            return null;
+        }
+
+        return 'https://www.google.com/maps/search/?api=1&query=' . urlencode($address);
+    }
 }
+

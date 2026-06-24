@@ -108,18 +108,38 @@ table.g-table td { padding: 3px 8px 3px 0; font-size: 10px; width: 50%; }
     </tr>
 </table>
 
-{{-- CLIENTE --}}
-<div class="section">
-    <span class="section-title">Cliente</span>
-    <div class="section-body">
-        <div class="customer-name">{{ $quote->customer?->name }}@if($quote->customer?->company) — {{ $quote->customer->company }}@endif</div>
-        <div class="customer-sub">
-            @if($quote->customer?->document)CNPJ/CPF: {{ $quote->customer->document }}<br>@endif
-            @if($quote->customer?->phone)WhatsApp: {{ $quote->customer->phone }}@endif
-            @if($quote->customer?->city) · {{ $quote->customer->city }}@if($quote->customer?->state)/{{ $quote->customer->state }}@endif@endif
-        </div>
-    </div>
-</div>
+{{-- CLIENTE E ENTREGA --}}
+<table style="width: 100%; border-collapse: collapse; margin-top: 14px; margin-bottom: 6px;">
+    <tr>
+        <td style="width: 50%; vertical-align: top; padding-right: 10px;">
+            <span class="section-title">Cliente</span>
+            <div class="section-body">
+                <div class="customer-name">{{ $quote->customer?->name }}@if($quote->customer?->company) — {{ $quote->customer->company }}@endif</div>
+                <div class="customer-sub">
+                    @if($quote->customer?->document)CNPJ/CPF: {{ $quote->customer->document }}<br>@endif
+                    @if($quote->customer?->phone)WhatsApp: {{ $quote->customer->phone }}@endif
+                    @if($quote->customer?->city) · {{ $quote->customer->city }}@if($quote->customer?->state)/{{ $quote->customer->state }}@endif@endif
+                </div>
+            </div>
+        </td>
+        <td style="width: 50%; vertical-align: top; padding-left: 10px;">
+            @if($quote->shipping_method !== 'retirada' && $quote->formatted_delivery_address)
+                <span class="section-title">Endereço de Entrega</span>
+                <div class="section-body">
+                    <div class="customer-name" style="font-size: 11px; font-weight: normal; line-height: 1.4;">
+                        @if($quote->google_maps_link)
+                            <a href="{{ $quote->google_maps_link }}" target="_blank" style="color: #1b5e20; text-decoration: underline; font-weight: bold;">
+                                {{ $quote->formatted_delivery_address }}
+                            </a>
+                        @else
+                            {{ $quote->formatted_delivery_address }}
+                        @endif
+                    </div>
+                </div>
+            @endif
+        </td>
+    </tr>
+</table>
 
 {{-- ITENS --}}
 <div class="section">
@@ -131,6 +151,7 @@ table.g-table td { padding: 3px 8px 3px 0; font-size: 10px; width: 50%; }
                 <th>Produto / Especificação</th>
                 <th class="c" style="width:45px;">Qtde</th>
                 <th class="r" style="width:80px;">Unit.</th>
+                <th class="r" style="width:80px;">Desconto</th>
                 <th class="r" style="width:85px;">Total</th>
             </tr>
         </thead>
@@ -146,6 +167,16 @@ table.g-table td { padding: 3px 8px 3px 0; font-size: 10px; width: 50%; }
                 </td>
                 <td class="c">{{ $item->qty }}</td>
                 <td class="r" style="color:#555;">{{ format_brl($item->unit_price) }}</td>
+                <td class="r" style="color:#1b7a2b;">
+                    @if($item->discountAmount() > 0)
+                        − {{ format_brl($item->discountAmount()) }}
+                        @if($item->discount_type === 'percent')
+                            <br><span class="sub">({{ rtrim(rtrim(number_format($item->discount_value, 2, ',', '.'), '0'), ',') }}%)</span>
+                        @endif
+                    @else
+                        —
+                    @endif
+                </td>
                 <td class="r">{{ format_brl($item->total) }}</td>
             </tr>
             @endforeach

@@ -13,6 +13,7 @@ class QuoteItem extends Model
     {
         return [
             'unit_price' => 'decimal:2',
+            'discount_value' => 'decimal:2',
             'total' => 'decimal:2',
         ];
     }
@@ -20,7 +21,7 @@ class QuoteItem extends Model
     protected static function booted(): void
     {
         static::saving(function (QuoteItem $item) {
-            $item->total = $item->qty * (float) $item->unit_price;
+            $item->total = max(0, $item->subtotal() - $item->discountAmount());
         });
 
         static::saved(fn (QuoteItem $item) => $item->quote?->recalculateTotals());
@@ -35,5 +36,23 @@ class QuoteItem extends Model
     public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);
+    }
+
+    public function subtotal(): float
+    {
+        return (float) $this->qty * (float) $this->unit_price;
+    }
+
+    public function discountAmount(): float
+    {
+        $subtotal = $this->subtotal();
+
+        $amount = match ($this->discount_type) {
+            'percent' => $subtotal * ((float) $this->discount_value / 100),
+            'fixed' => (float) $this->discount_value,
+            default => 0.0,
+        };
+
+        return min($amount, $subtotal);
     }
 }
