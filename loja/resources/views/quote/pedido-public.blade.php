@@ -102,13 +102,26 @@
                                  @php
                                      $lines = explode("\n", $item->description);
                                      $firstLine = count($lines) > 0 ? trim($lines[0]) : '';
+                                     if ($item->product_variant_id) {
+                                         $variant = \App\Models\ProductVariant::find($item->product_variant_id);
+                                         if ($variant) {
+                                             $firstLine = str_replace(' — ' . $variant->name, '', $firstLine);
+                                             $firstLine = str_replace(' - ' . $variant->name, '', $firstLine);
+                                         }
+                                     }
                                  @endphp
                                  @if($firstLine)
                                      <span class="block">&bull; {{ $firstLine }}</span>
                                  @endif
                                  @if($item->product && $item->product->attributeValues->isNotEmpty())
                                      @foreach($item->product->attributeValues as $val)
-                                         <span class="block">&bull; {{ $val->attribute->name }}/{{ $val->value }}{{ $val->attribute->unit ? ' ' . $val->attribute->unit : '' }}</span>
+                                         @php
+                                             $displayVal = $val->value;
+                                             if ($val->attribute->type === 'boolean') {
+                                                 $displayVal = in_array(strtolower(trim($val->value)), ['1', 'sim', 'yes', 'true']) ? 'Sim' : 'Não';
+                                             }
+                                         @endphp
+                                         <span class="block">&bull; {{ $val->attribute->name }}/{{ $displayVal }}{{ $val->attribute->unit ? ' ' . $val->attribute->unit : '' }}</span>
                                      @endforeach
                                  @else
                                      @foreach(array_slice($lines, 1) as $line)
