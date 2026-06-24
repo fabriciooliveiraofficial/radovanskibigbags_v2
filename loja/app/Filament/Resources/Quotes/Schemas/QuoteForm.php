@@ -53,7 +53,22 @@ class QuoteForm
             }
 
             $items = [];
-            if ($record && $record->exists) {
+            $formItems = $get('items') ?? [];
+            if (!empty($formItems)) {
+                foreach ($formItems as $itemData) {
+                    $weight = 0.5;
+                    if (!empty($itemData['product_id'])) {
+                        $product = \App\Models\Product::find($itemData['product_id']);
+                        if ($product) {
+                            $weight = $product->weight_kg ?? 0.5;
+                        }
+                    }
+                    $items[] = [
+                        'weight_kg' => (float) $weight,
+                        'qty' => (int) ($itemData['qty'] ?? 1),
+                    ];
+                }
+            } elseif ($record && $record->exists) {
                 foreach ($record->items as $item) {
                     $items[] = [
                         'weight_kg' => (float) ($item->weight_kg ?? ($item->product->weight_kg ?? 0.5)),
@@ -245,6 +260,10 @@ class QuoteForm
                                 if (!$state) {
                                     $set('shipping_cep', null);
                                     $set('delivery_address', null);
+                                } else {
+                                    if ($get('shipping_method') === 'retirada') {
+                                        $set('shipping_method', 'transportadora');
+                                    }
                                 }
                                 $updateFreight($set, $get, $record);
                             })
@@ -273,7 +292,7 @@ class QuoteForm
                                                 $stateCode = $data['uf'] ?? '';
                                                 
                                                 $formatted = array_filter([$street, $neighborhood, $city, $stateCode]);
-                                                $set('delivery_address', implode(', ', $formatted));
+                                                $set('delivery_address', implode(', ', $formatted) . ', Nº ');
                                             }
                                         }
                                     } catch (\Exception $e) {
