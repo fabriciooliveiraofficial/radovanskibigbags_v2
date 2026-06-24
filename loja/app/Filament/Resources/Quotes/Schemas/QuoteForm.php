@@ -359,7 +359,7 @@ class QuoteForm
                                         }
                                         $product = Product::find($state);
                                         if ($product) {
-                                            $set('description', $product->name.($product->dimensionsLabel() ? ' — '.$product->dimensionsLabel() : ''));
+                                            $set('description', $product->name.($product->dimensionsLabel() ? "\n".$product->dimensionsLabel() : ''));
                                             if ($product->price !== null) {
                                                 $set('unit_price', (string) $product->price);
                                             }
@@ -378,7 +378,7 @@ class QuoteForm
                                         }
                                         $variant = ProductVariant::find($state);
                                         if ($variant) {
-                                            $set('description', $variant->product->name.' — '.$variant->name);
+                                            $set('description', $variant->product->name."\n".$variant->name);
                                             if ($variant->effectivePrice() !== null) {
                                                 $set('unit_price', (string) $variant->effectivePrice());
                                             }
@@ -386,9 +386,10 @@ class QuoteForm
                                     })
                                     ->visible(fn (Get $get) => filled($get('product_id')))
                                     ->columnSpan(2),
-                                TextInput::make('description')
+                                Textarea::make('description')
                                     ->label('Descrição do item')
-                                    ->helperText('Texto que aparece no orçamento. Pode ser um item livre, sem produto do catálogo.')
+                                    ->helperText('Texto que aparece no orçamento. Use quebras de linha para separar o produto dos seus atributos.')
+                                    ->rows(2)
                                     ->required()
                                     ->columnSpan(2),
                                 TextInput::make('qty')

@@ -73,7 +73,7 @@
     <thead>
         <tr>
             <th style="width: 30px;">#</th>
-            <th>Descrição</th>
+            <th>Produto/Atributos</th>
             <th class="center" style="width: 50px;">Qtde</th>
             <th class="num" style="width: 90px;">Unitário</th>
             <th class="num" style="width: 90px;">Desconto</th>
@@ -84,7 +84,13 @@
         @foreach($quote->items as $item)
             <tr>
                 <td>{{ $loop->iteration }}</td>
-                <td>{{ $item->description }}</td>
+                <td>
+                    @foreach(explode("\n", $item->description) as $line)
+                        @if(trim($line))
+                            &bull; {{ trim($line) }}<br>
+                        @endif
+                    @endforeach
+                </td>
                 <td class="center">{{ $item->qty }}</td>
                 <td class="num">{{ format_brl($item->unit_price) }}</td>
                 <td class="num" style="color: #c0392b;">

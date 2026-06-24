@@ -87,7 +87,7 @@
                 <thead>
                     <tr class="bg-ink text-white text-xs">
                         <th class="text-left px-3 py-2.5 rounded-l-lg">#</th>
-                        <th class="text-left px-2 py-2.5">Produto / Especificação</th>
+                        <th class="text-left px-2 py-2.5">Produto/Atributos</th>
                         <th class="text-center px-2 py-2.5">Qtde</th>
                         <th class="text-right px-2 py-2.5">Unit.</th>
                         <th class="text-right px-2 py-2.5">Desconto</th>
@@ -99,7 +99,11 @@
                         <tr class="border-b border-gray-100 @if($loop->even) bg-gray-50 @endif">
                             <td class="px-3 py-2.5 text-gray-400 text-xs">{{ $loop->iteration }}</td>
                             <td class="px-2 py-2.5 font-medium">
-                                {{ $item->description }}
+                                @foreach(explode("\n", $item->description) as $line)
+                                    @if(trim($line))
+                                        <span class="block">&bull; {{ trim($line) }}</span>
+                                    @endif
+                                @endforeach
                                 @if($item->weight_kg)
                                     <span class="text-xs text-gray-400 block">{{ number_format($item->weight_kg, 1) }} kg/un.</span>
                                 @endif

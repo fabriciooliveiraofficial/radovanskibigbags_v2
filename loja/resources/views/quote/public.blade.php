@@ -75,7 +75,7 @@
         <table class="w-full text-sm">
             <thead>
                 <tr class="bg-ink text-white">
-                    <th class="text-left px-3 py-2 rounded-l-lg">Descrição</th>
+                    <th class="text-left px-3 py-2 rounded-l-lg">Produto/Atributos</th>
                     <th class="text-center px-2 py-2">Qtde</th>
                     <th class="text-right px-2 py-2">Unitário</th>
                     <th class="text-right px-2 py-2">Desconto</th>
@@ -85,7 +85,13 @@
             <tbody>
                 @foreach($quote->items as $item)
                     <tr class="border-b border-gray-100">
-                        <td class="px-3 py-2.5">{{ $item->description }}</td>
+                        <td class="px-3 py-2.5">
+                            @foreach(explode("\n", $item->description) as $line)
+                                @if(trim($line))
+                                    <span class="block">&bull; {{ trim($line) }}</span>
+                                @endif
+                            @endforeach
+                        </td>
                         <td class="px-2 py-2.5 text-center">{{ $item->qty }}</td>
                         <td class="px-2 py-2.5 text-right whitespace-nowrap">{{ format_brl($item->unit_price) }}</td>
                         <td class="px-2 py-2.5 text-right whitespace-nowrap text-red-600">

@@ -148,7 +148,7 @@ table.g-table td { padding: 3px 8px 3px 0; font-size: 10px; width: 50%; }
         <thead>
             <tr>
                 <th style="width:20px;">#</th>
-                <th>Produto / Especificação</th>
+                <th>Produto/Atributos</th>
                 <th class="c" style="width:45px;">Qtde</th>
                 <th class="r" style="width:80px;">Unit.</th>
                 <th class="r" style="width:80px;">Desconto</th>
@@ -160,7 +160,11 @@ table.g-table td { padding: 3px 8px 3px 0; font-size: 10px; width: 50%; }
             <tr class="{{ $loop->even ? 'even' : '' }}">
                 <td style="color:#999;">{{ $loop->iteration }}</td>
                 <td>
-                    {{ $item->description }}
+                    @foreach(explode("\n", $item->description) as $line)
+                        @if(trim($line))
+                            &bull; {{ trim($line) }}<br>
+                        @endif
+                    @endforeach
                     @if($item->weight_kg)
                         <br><span class="sub">{{ number_format($item->weight_kg, 1) }} kg/un.</span>
                     @endif
