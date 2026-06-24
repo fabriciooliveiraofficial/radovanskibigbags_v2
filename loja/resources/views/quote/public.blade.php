@@ -48,7 +48,7 @@
 
     {{-- Cliente --}}
     <div class="bg-white border-x border-gray-200 px-6 py-4 flex flex-col md:flex-row gap-4 justify-between">
-        <div>
+        <div class="w-full md:w-1/2">
             <p class="text-xs font-bold uppercase text-gray-400 mb-1">Cliente</p>
             <p class="font-bold">{{ $quote->customer?->name }}@if($quote->customer?->company) — {{ $quote->customer->company }}@endif</p>
             @if($quote->customer?->document)
@@ -56,7 +56,7 @@
             @endif
         </div>
         @if($quote->shipping_method !== 'retirada' && $quote->formatted_delivery_address)
-            <div class="md:text-right">
+            <div class="w-full md:w-1/2 md:text-right">
                 <p class="text-xs font-bold uppercase text-gray-400 mb-1">Endereço de Entrega</p>
                 @if($quote->google_maps_link)
                     <a href="{{ $quote->google_maps_link }}" target="_blank" rel="noopener" class="text-brand-700 hover:underline font-bold text-sm block">
