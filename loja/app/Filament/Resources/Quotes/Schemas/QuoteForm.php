@@ -15,6 +15,7 @@ use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
@@ -34,13 +35,20 @@ class QuoteForm
                 return;
             }
 
-            $customerId = $get('customer_id');
-            if (!$customerId) {
-                return;
+            $cep = null;
+            if ($get('has_different_delivery_address')) {
+                $cep = $get('shipping_cep');
+            } else {
+                $customerId = $get('customer_id');
+                if ($customerId) {
+                    $customer = Customer::find($customerId);
+                    if ($customer && $customer->cep) {
+                        $cep = $customer->cep;
+                    }
+                }
             }
 
-            $customer = Customer::find($customerId);
-            if (!$customer || !$customer->cep) {
+            if (!$cep) {
                 return;
             }
 
@@ -56,7 +64,7 @@ class QuoteForm
 
             try {
                 $calculator = app(FreightCalculator::class);
-                $result = $calculator->quote($customer->cep, $items);
+                $result = $calculator->quote($cep, $items);
 
                 if (!empty($result['options'])) {
                     foreach ($result['options'] as $option) {
@@ -127,16 +135,6 @@ class QuoteForm
                                     $set('customer_id', $ficha->customer_id);
                                     $set('_ficha_id', null);
                                     $updateFreight($set, $get, $record);
-
-                                    $customer = Customer::find($ficha->customer_id);
-                                    if ($customer) {
-                                        $addressParts = array_filter([
-                                            $customer->address,
-                                            $customer->city ? "{$customer->city} - {$customer->state}" : null,
-                                            $customer->cep ? "CEP {$customer->cep}" : null,
-                                        ]);
-                                        $set('delivery_address', implode(', ', $addressParts));
-                                    }
                                     return;
                                 }
 
@@ -163,13 +161,6 @@ class QuoteForm
                                 $set('customer_id', $customer->id);
                                 $set('_ficha_id', null);
                                 $updateFreight($set, $get, $record);
-
-                                $addressParts = array_filter([
-                                    $customer->address,
-                                    $customer->city ? "{$customer->city} - {$customer->state}" : null,
-                                    $customer->cep ? "CEP {$customer->cep}" : null,
-                                ]);
-                                $set('delivery_address', implode(', ', $addressParts));
                             })
                             ->dehydrated(false)
                             ->columnSpanFull(),
@@ -198,20 +189,6 @@ class QuoteForm
                             ->live()
                             ->afterStateUpdated(function (Set $set, Get $get, ?Model $record) use ($updateFreight) {
                                 $updateFreight($set, $get, $record);
-
-                                // Auto-fill delivery address
-                                $customerId = $get('customer_id');
-                                if ($customerId) {
-                                    $customer = Customer::find($customerId);
-                                    if ($customer) {
-                                        $addressParts = array_filter([
-                                            $customer->address,
-                                            $customer->city ? "{$customer->city} - {$customer->state}" : null,
-                                            $customer->cep ? "CEP {$customer->cep}" : null,
-                                        ]);
-                                        $set('delivery_address', implode(', ', $addressParts));
-                                    }
-                                }
                             }),
 
                         DatePicker::make('valid_until')
@@ -258,10 +235,59 @@ class QuoteForm
                         TextInput::make('shipping_carrier')
                             ->label('Transportadora')
                             ->visible(fn (Get $get) => $get('shipping_method') === 'transportadora'),
+
+                        Toggle::make('has_different_delivery_address')
+                            ->label('Endereço de entrega diferente')
+                            ->default(false)
+                            ->live()
+                            ->dehydrated()
+                            ->afterStateUpdated(function (Set $set, Get $get, ?Model $record, $state) use ($updateFreight) {
+                                if (!$state) {
+                                    $set('shipping_cep', null);
+                                    $set('delivery_address', null);
+                                }
+                                $updateFreight($set, $get, $record);
+                            })
+                            ->columnSpanFull(),
+
+                        TextInput::make('shipping_cep')
+                            ->label('CEP de entrega')
+                            ->placeholder('00000-000')
+                            ->mask('99999-999')
+                            ->live(onBlur: true)
+                            ->visible(fn (Get $get) => $get('has_different_delivery_address'))
+                            ->afterStateUpdated(function (Set $set, Get $get, ?Model $record, $state) use ($updateFreight) {
+                                if (!$state) return;
+                                $cleanCep = preg_replace('/\D/', '', $state);
+                                if (strlen($cleanCep) === 8) {
+                                    try {
+                                        $response = \Illuminate\Support\Facades\Http::timeout(3)
+                                            ->withoutVerifying()
+                                            ->get("https://viacep.com.br/ws/{$cleanCep}/json/");
+                                        if ($response->successful()) {
+                                            $data = $response->json();
+                                            if (!isset($data['erro']) || !$data['erro']) {
+                                                $street = $data['logradouro'] ?? '';
+                                                $neighborhood = $data['bairro'] ?? '';
+                                                $city = $data['localidade'] ?? '';
+                                                $stateCode = $data['uf'] ?? '';
+                                                
+                                                $formatted = array_filter([$street, $neighborhood, $city, $stateCode]);
+                                                $set('delivery_address', implode(', ', $formatted));
+                                            }
+                                        }
+                                    } catch (\Exception $e) {
+                                        \Illuminate\Support\Facades\Log::warning("ViaCEP lookup failed in form: " . $e->getMessage());
+                                    }
+                                }
+                                $updateFreight($set, $get, $record);
+                            }),
+
                         Textarea::make('delivery_address')
                             ->label('Endereço de entrega')
                             ->placeholder('Rua..., Número..., Bairro..., Cidade..., Estado..., CEP...')
                             ->rows(2)
+                            ->visible(fn (Get $get) => $get('has_different_delivery_address'))
                             ->columnSpanFull(),
                     ])
                     ->columns(4),

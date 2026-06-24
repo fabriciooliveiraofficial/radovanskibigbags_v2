@@ -39,6 +39,7 @@ class Quote extends Model
             'viewed_at'      => 'datetime',
             'approved_at'    => 'datetime',
             'sent_channels'  => 'array',
+            'has_different_delivery_address' => 'boolean',
         ];
     }
 
@@ -198,7 +199,7 @@ class Quote extends Model
 
     public function getFormattedDeliveryAddressAttribute(): ?string
     {
-        if ($this->delivery_address) {
+        if ($this->has_different_delivery_address && $this->delivery_address) {
             return $this->delivery_address;
         }
 
