@@ -109,9 +109,11 @@
                             <td class="px-2 py-2.5 text-right whitespace-nowrap text-red-600">
                                 @if($item->discountAmount() > 0)
                                     − {{ format_brl($item->discountAmount()) }}
-                                    @if($item->discount_type === 'percent')
-                                        <span class="text-gray-400">({{ rtrim(rtrim(number_format($item->discount_value, 2, ',', '.'), '0'), ',') }}%)</span>
-                                    @endif
+                                    <span class="text-gray-400">
+                                        ({{ $item->discount_type === 'percent'
+                                            ? rtrim(rtrim(number_format($item->discount_value, 2, ',', '.'), '0'), ',').'%'
+                                            : 'valor fixo' }})
+                                    </span>
                                 @else
                                     <span class="text-gray-300">—</span>
                                 @endif

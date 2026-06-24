@@ -7,7 +7,6 @@ use App\Filament\Resources\Pedidos\Pages\EditPedido;
 use App\Filament\Resources\Pedidos\Pages\ListPedidos;
 use App\Filament\Resources\Pedidos\Tables\PedidosTable;
 use App\Filament\Resources\Quotes\RelationManagers\AttachmentsRelationManager;
-use App\Filament\Resources\Quotes\RelationManagers\ItemsRelationManager;
 use App\Filament\Resources\Quotes\Schemas\QuoteForm;
 use App\Models\Quote;
 use BackedEnum;
@@ -52,7 +51,6 @@ class PedidosResource extends Resource
     public static function getRelations(): array
     {
         return [
-            ItemsRelationManager::class,
             AttachmentsRelationManager::class,
         ];
     }

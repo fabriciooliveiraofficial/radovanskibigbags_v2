@@ -170,9 +170,11 @@ table.g-table td { padding: 3px 8px 3px 0; font-size: 10px; width: 50%; }
                 <td class="r" style="color:#1b7a2b;">
                     @if($item->discountAmount() > 0)
                         − {{ format_brl($item->discountAmount()) }}
-                        @if($item->discount_type === 'percent')
-                            <br><span class="sub">({{ rtrim(rtrim(number_format($item->discount_value, 2, ',', '.'), '0'), ',') }}%)</span>
-                        @endif
+                        <br><span class="sub">
+                            ({{ $item->discount_type === 'percent'
+                                ? rtrim(rtrim(number_format($item->discount_value, 2, ',', '.'), '0'), ',').'%'
+                                : 'valor fixo' }})
+                        </span>
                     @else
                         —
                     @endif
