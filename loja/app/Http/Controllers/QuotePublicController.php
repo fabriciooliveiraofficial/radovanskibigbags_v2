@@ -20,7 +20,7 @@ class QuotePublicController extends Controller
 
     private function findQuote(string $token): Quote
     {
-        return Quote::with(['items', 'customer'])
+        return Quote::with(['items.product.attributeValues.attribute', 'customer'])
             ->where('public_token', $token)
             ->firstOrFail();
     }
@@ -44,7 +44,7 @@ class QuotePublicController extends Controller
         $view = $quote->isPedido() ? 'quote.pedido-public' : 'quote.public';
 
         return view($view, [
-            'quote' => $quote->fresh(['items', 'customer', 'emailLogs']),
+            'quote' => $quote->fresh(['items.product.attributeValues.attribute', 'customer', 'emailLogs']),
         ]);
     }
 

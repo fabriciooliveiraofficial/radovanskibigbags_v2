@@ -49,6 +49,7 @@ class QuoteEmail extends Mailable
      */
     public function attachments(): array
     {
+        $this->quote->loadMissing('items.product.attributeValues.attribute');
         $pdf = Pdf::loadView('quote.pdf', ['quote' => $this->quote])
             ->setPaper('a4');
 

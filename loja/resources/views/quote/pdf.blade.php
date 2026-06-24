@@ -85,11 +85,24 @@
             <tr>
                 <td>{{ $loop->iteration }}</td>
                 <td>
-                    @foreach(explode("\n", $item->description) as $line)
-                        @if(trim($line))
-                            &bull; {{ trim($line) }}<br>
-                        @endif
-                    @endforeach
+                    @php
+                        $lines = explode("\n", $item->description);
+                        $firstLine = count($lines) > 0 ? trim($lines[0]) : '';
+                    @endphp
+                    @if($firstLine)
+                        &bull; {{ $firstLine }}<br>
+                    @endif
+                    @if($item->product && $item->product->attributeValues->isNotEmpty())
+                        @foreach($item->product->attributeValues as $val)
+                            &bull; {{ $val->attribute->name }}/{{ $val->value }}{{ $val->attribute->unit ? ' ' . $val->attribute->unit : '' }}<br>
+                        @endforeach
+                    @else
+                        @foreach(array_slice($lines, 1) as $line)
+                            @if(trim($line))
+                                &bull; {{ trim($line) }}<br>
+                            @endif
+                        @endforeach
+                    @endif
                 </td>
                 <td class="center">{{ $item->qty }}</td>
                 <td class="num">{{ format_brl($item->unit_price) }}</td>

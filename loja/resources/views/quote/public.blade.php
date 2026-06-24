@@ -85,12 +85,25 @@
             <tbody>
                 @foreach($quote->items as $item)
                     <tr class="border-b border-gray-100">
-                        <td class="px-3 py-2.5">
-                            @foreach(explode("\n", $item->description) as $line)
-                                @if(trim($line))
-                                    <span class="block">&bull; {{ trim($line) }}</span>
-                                @endif
-                            @endforeach
+                        <td class="px-3 py-2.5 font-medium">
+                            @php
+                                $lines = explode("\n", $item->description);
+                                $firstLine = count($lines) > 0 ? trim($lines[0]) : '';
+                            @endphp
+                            @if($firstLine)
+                                <span class="block">&bull; {{ $firstLine }}</span>
+                            @endif
+                            @if($item->product && $item->product->attributeValues->isNotEmpty())
+                                @foreach($item->product->attributeValues as $val)
+                                    <span class="block">&bull; {{ $val->attribute->name }}/{{ $val->value }}{{ $val->attribute->unit ? ' ' . $val->attribute->unit : '' }}</span>
+                                @endforeach
+                            @else
+                                @foreach(array_slice($lines, 1) as $line)
+                                    @if(trim($line))
+                                        <span class="block">&bull; {{ trim($line) }}</span>
+                                    @endif
+                                @endforeach
+                            @endif
                         </td>
                         <td class="px-2 py-2.5 text-center">{{ $item->qty }}</td>
                         <td class="px-2 py-2.5 text-right whitespace-nowrap">{{ format_brl($item->unit_price) }}</td>

@@ -59,6 +59,7 @@ class SmtpMailService
                 }
 
                 if ($attachPdf) {
+                    $quote->loadMissing('items.product.attributeValues.attribute');
                     $pdfView = $quote->isPedido() ? 'quote.pedido-pdf' : 'quote.pdf';
                     $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView($pdfView, ['quote' => $quote])->setPaper('a4');
                     $prefix = $quote->isPedido() ? 'pedido' : 'orcamento';

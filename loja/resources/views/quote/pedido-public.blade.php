@@ -99,15 +99,28 @@
                         <tr class="border-b border-gray-100 @if($loop->even) bg-gray-50 @endif">
                             <td class="px-3 py-2.5 text-gray-400 text-xs">{{ $loop->iteration }}</td>
                             <td class="px-2 py-2.5 font-medium">
-                                @foreach(explode("\n", $item->description) as $line)
-                                    @if(trim($line))
-                                        <span class="block">&bull; {{ trim($line) }}</span>
-                                    @endif
-                                @endforeach
-                                @if($item->weight_kg)
-                                    <span class="text-xs text-gray-400 block">{{ number_format($item->weight_kg, 1) }} kg/un.</span>
-                                @endif
-                            </td>
+                                 @php
+                                     $lines = explode("\n", $item->description);
+                                     $firstLine = count($lines) > 0 ? trim($lines[0]) : '';
+                                 @endphp
+                                 @if($firstLine)
+                                     <span class="block">&bull; {{ $firstLine }}</span>
+                                 @endif
+                                 @if($item->product && $item->product->attributeValues->isNotEmpty())
+                                     @foreach($item->product->attributeValues as $val)
+                                         <span class="block">&bull; {{ $val->attribute->name }}/{{ $val->value }}{{ $val->attribute->unit ? ' ' . $val->attribute->unit : '' }}</span>
+                                     @endforeach
+                                 @else
+                                     @foreach(array_slice($lines, 1) as $line)
+                                         @if(trim($line))
+                                             <span class="block">&bull; {{ trim($line) }}</span>
+                                         @endif
+                                     @endforeach
+                                 @endif
+                                 @if($item->weight_kg)
+                                     <span class="text-xs text-gray-400 block">{{ number_format($item->weight_kg, 1) }} kg/un.</span>
+                                 @endif
+                             </td>
                             <td class="px-2 py-2.5 text-center font-bold">{{ $item->qty }}</td>
                             <td class="px-2 py-2.5 text-right text-gray-600 whitespace-nowrap">{{ format_brl($item->unit_price) }}</td>
                             <td class="px-2 py-2.5 text-right whitespace-nowrap text-red-600">
