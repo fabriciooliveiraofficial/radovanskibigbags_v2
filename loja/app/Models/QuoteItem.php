@@ -49,7 +49,7 @@ class QuoteItem extends Model
 
         $amount = match ($this->discount_type) {
             'percent' => $subtotal * ((float) $this->discount_value / 100),
-            'fixed' => (float) $this->discount_value,
+            'fixed' => ((float) $this->discount_value) * ((float) $this->qty),
             default => 0.0,
         };
 
