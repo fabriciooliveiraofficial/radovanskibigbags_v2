@@ -123,11 +123,8 @@ class ProductForm
                                                     ->label('Atributo')
                                                     ->relationship('attribute', 'name')
                                                     ->required(),
-                                                TextInput::make('value')
-                                                    ->label('Valor')
-                                                    ->required(),
                                             ])
-                                            ->columns(2)
+                                            ->columns(1)
                                             ->defaultItems(0)
                                             ->addActionLabel('Adicionar atributo'),
                                     ]),

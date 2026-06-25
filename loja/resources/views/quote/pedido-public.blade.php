@@ -115,13 +115,17 @@
                                  @endif
                                  @if($item->product && $item->product->attributeValues->isNotEmpty())
                                      @foreach($item->product->attributeValues as $val)
-                                         @php
-                                             $displayVal = $val->value;
-                                             if ($val->attribute->type === 'boolean') {
-                                                 $displayVal = in_array(strtolower(trim($val->value)), ['1', 'sim', 'yes', 'true']) ? 'Sim' : 'Não';
-                                             }
-                                         @endphp
-                                         <span class="block">&bull; {{ $val->attribute->name }}/{{ $displayVal }}{{ $val->attribute->unit ? ' ' . $val->attribute->unit : '' }}</span>
+                                         @if($val->value)
+                                             @php
+                                                 $displayVal = $val->value;
+                                                 if ($val->attribute->type === 'boolean') {
+                                                     $displayVal = in_array(strtolower(trim($val->value)), ['1', 'sim', 'yes', 'true']) ? 'Sim' : 'Não';
+                                                 }
+                                             @endphp
+                                             <span class="block">&bull; {{ $val->attribute->name }}/{{ $displayVal }}{{ $val->attribute->unit ? ' ' . $val->attribute->unit : '' }}</span>
+                                         @else
+                                             <span class="block">&bull; {{ $val->attribute->name }}</span>
+                                         @endif
                                      @endforeach
                                  @else
                                      @foreach(array_slice($lines, 1) as $line)

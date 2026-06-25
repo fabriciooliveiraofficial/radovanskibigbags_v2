@@ -194,7 +194,19 @@
                     @foreach($product->attributeValues as $attributeValue)
                         <tr class="border-t border-gray-100">
                             <td class="px-4 py-2 text-gray-500">{{ $attributeValue->attribute->name }}</td>
-                            <td class="px-4 py-2 font-semibold">{{ $attributeValue->value }}{{ $attributeValue->attribute->unit ? ' ' . $attributeValue->attribute->unit : '' }}</td>
+                            <td class="px-4 py-2 font-semibold">
+                                @if($attributeValue->value)
+                                    @php
+                                        $displayVal = $attributeValue->value;
+                                        if ($attributeValue->attribute->type === 'boolean') {
+                                            $displayVal = in_array(strtolower(trim($attributeValue->value)), ['1', 'sim', 'yes', 'true']) ? 'Sim' : 'Não';
+                                        }
+                                    @endphp
+                                    {{ $displayVal }}{{ $attributeValue->attribute->unit ? ' ' . $attributeValue->attribute->unit : '' }}
+                                @else
+                                    Sim
+                                @endif
+                            </td>
                         </tr>
                     @endforeach
                     @if($product->useCases->isNotEmpty())
