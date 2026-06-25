@@ -170,6 +170,10 @@ table.g-table td { padding: 3px 8px 3px 0; font-size: 10px; width: 50%; }
                                 $firstLine = str_replace(' - ' . $variant->name, '', $firstLine);
                             }
                         }
+                        if ($item->product && $item->product->dimensionsLabel()) {
+                            $firstLine = str_replace(' — ' . $item->product->dimensionsLabel(), '', $firstLine);
+                            $firstLine = str_replace(' - ' . $item->product->dimensionsLabel(), '', $firstLine);
+                        }
                     @endphp
                     @if($firstLine)
                         &bull; {{ $firstLine }}<br>
