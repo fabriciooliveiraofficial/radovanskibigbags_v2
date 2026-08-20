@@ -67,13 +67,38 @@ class ProductsTable
                 EditAction::make(),
                 ReplicateAction::make()
                     ->label('Duplicar')
-                    ->excludeAttributes(['slug'])
+                    ->excludeAttributes(['id', 'created_at', 'updated_at', 'slug'])
                     ->mutateRecordDataUsing(function (array $data): array {
                         $data['name'] = ($data['name'] ?? '').' (cópia)';
                         $data['slug'] = Str::slug(($data['name'] ?? 'produto')).'-'.uniqid();
                         $data['is_active'] = false;
 
                         return $data;
+                    })
+                    ->after(function (Product $record, Product $replica): void {
+                        foreach ($record->useCases as $useCase) {
+                            $replica->useCases()->attach($useCase->id);
+                        }
+                        foreach ($record->images as $image) {
+                            $newImage = $image->replicate(['id', 'product_id', 'created_at', 'updated_at']);
+                            $newImage->product_id = $replica->id;
+                            $newImage->save();
+                        }
+                        foreach ($record->variants as $variant) {
+                            $newVariant = $variant->replicate(['id', 'product_id', 'created_at', 'updated_at']);
+                            $newVariant->product_id = $replica->id;
+                            $newVariant->save();
+                        }
+                        foreach ($record->quantityPrices as $qp) {
+                            $newQp = $qp->replicate(['id', 'product_id', 'created_at', 'updated_at']);
+                            $newQp->product_id = $replica->id;
+                            $newQp->save();
+                        }
+                        foreach ($record->attributeValues as $attr) {
+                            $newAttr = $attr->replicate(['id', 'product_id', 'created_at', 'updated_at']);
+                            $newAttr->product_id = $replica->id;
+                            $newAttr->save();
+                        }
                     }),
             ])
             ->toolbarActions([
