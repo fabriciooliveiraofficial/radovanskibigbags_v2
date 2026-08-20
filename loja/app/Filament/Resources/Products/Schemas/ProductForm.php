@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Products\Schemas;
 
 use App\Models\Product;
+use Filament\Actions\Action;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\Select;
@@ -12,12 +13,36 @@ use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Tabs;
 use Filament\Schemas\Components\Tabs\Tab;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
+use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\Str;
 
 class ProductForm
 {
+    public static function generateUniqueSlug(?string $name, ?int $ignoreId = null): string
+    {
+        $baseSlug = Str::slug(trim((string) $name));
+        if (blank($baseSlug)) {
+            $baseSlug = 'produto';
+        }
+
+        $slug = $baseSlug;
+        $count = 2;
+
+        while (
+            Product::where('slug', $slug)
+                ->when($ignoreId, fn ($query) => $query->where('id', '!=', $ignoreId))
+                ->exists()
+        ) {
+            $slug = "{$baseSlug}-{$count}";
+            $count++;
+        }
+
+        return $slug;
+    }
+
     public static function configure(Schema $schema): Schema
     {
         return $schema
@@ -31,13 +56,26 @@ class ProductForm
                                     ->label('Nome do produto')
                                     ->required()
                                     ->live(onBlur: true)
-                                    ->afterStateUpdated(fn (Set $set, ?string $state, string $operation) => $operation === 'create' ? $set('slug', Str::slug((string) $state)) : null)
+                                    ->afterStateUpdated(function (Set $set, ?string $state, string $operation, ?Product $record) {
+                                        if ($operation === 'create') {
+                                            $set('slug', self::generateUniqueSlug($state, $record?->id));
+                                        }
+                                    })
                                     ->columnSpan(2),
                                 TextInput::make('slug')
                                     ->label('Slug (URL)')
                                     ->helperText('Endereço da página do produto. Ex: big-bag-novo-90x90x120')
                                     ->required()
-                                    ->unique(ignoreRecord: true),
+                                    ->unique(ignoreRecord: true)
+                                    ->suffixAction(
+                                        Action::make('generateSlug')
+                                            ->icon(Heroicon::ArrowPath)
+                                            ->tooltip('Gerar slug único automaticamente')
+                                            ->action(function (Get $get, Set $set, ?Product $record) {
+                                                $name = $get('name') ?: $get('slug');
+                                                $set('slug', self::generateUniqueSlug($name, $record?->id));
+                                            })
+                                    ),
                                 Select::make('category_id')
                                     ->label('Categoria')
                                     ->relationship('category', 'name')

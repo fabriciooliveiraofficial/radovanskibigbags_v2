@@ -70,7 +70,7 @@ class ProductsTable
                     ->excludeAttributes(['id', 'created_at', 'updated_at', 'slug'])
                     ->mutateRecordDataUsing(function (array $data): array {
                         $data['name'] = ($data['name'] ?? '').' (cópia)';
-                        $data['slug'] = Str::slug(($data['name'] ?? 'produto')).'-'.uniqid();
+                        $data['slug'] = \App\Filament\Resources\Products\Schemas\ProductForm::generateUniqueSlug($data['name']);
                         $data['is_active'] = false;
 
                         return $data;
