@@ -68,10 +68,10 @@ class ProductsTable
                 ReplicateAction::make()
                     ->label('Duplicar')
                     ->excludeAttributes(['id', 'created_at', 'updated_at', 'slug'])
-                    ->mutateRecordDataUsing(function (array $data): array {
+                    ->mutateRecordDataUsing(function (array $data, Product $record): array {
                         $data['name'] = ($data['name'] ?? '').' (cópia)';
                         $data['slug'] = \App\Filament\Resources\Products\Schemas\ProductForm::generateUniqueSlug($data['name']);
-                        $data['is_active'] = false;
+                        $data['is_active'] = (bool) ($record->is_active ?? true);
 
                         return $data;
                     })
