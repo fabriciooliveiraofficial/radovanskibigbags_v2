@@ -207,7 +207,7 @@ class CartController extends Controller
         $this->cart->clear();
         session()->forget('cart.credit_application_id');
 
-        return redirect()->away('https://wa.me/'.$storePhone.'?text='.rawurlencode($message));
+        return redirect()->away(store_whatsapp_link($message));
     }
 
     /**
@@ -219,9 +219,9 @@ class CartController extends Controller
         $freight = session('cart.freight');
         $freightCep = session('cart.freight_cep');
 
-        $lines = ["\u{1F44B} Olá! Quero fazer um pedido dos itens abaixo:", ''];
-        $lines[] = '━━━━━━━━━━━━━━━';
-        $lines[] = "\u{1F4E6} *ITENS*";
+        $lines = ['👋 *Olá! Quero fazer um pedido dos itens abaixo:*', ''];
+        $lines[] = '────────────────────────';
+        $lines[] = '📦 *ITENS*';
         $lines[] = '';
 
         $subtotal = 0.0;
@@ -236,7 +236,7 @@ class CartController extends Controller
             $unitPrice = $item['unit_price'];
             $unit = $product->unit ?: 'un';
 
-            $lines[] = $n.'. *'.$product->name.'*';
+            $lines[] = "*{$n}. {$product->name}*";
 
             $specs = [];
             if ($variant) {
@@ -250,23 +250,23 @@ class CartController extends Controller
                 }
             }
             $specs[] = $product->conditionLabel();
-            $lines[] = "   \u{1F4D0} ".implode(' · ', array_filter($specs));
+            $lines[] = '   📐 '.implode(' · ', array_filter($specs));
 
             if ($unitPrice !== null) {
                 $lineTotal = $unitPrice * $qty;
                 $subtotal += $lineTotal;
-                $lines[] = "   \u{1F522} ".$qty." ".$unit." × ".format_brl($unitPrice)." = *".format_brl($lineTotal)."*";
+                $lines[] = '   🔢 '.$qty.' '.$unit.' × '.format_brl($unitPrice).' = *'.format_brl($lineTotal).'*';
             } else {
                 $hasConsulta = true;
-                $lines[] = "   \u{1F522} ".$qty." ".$unit." — *sob consulta*";
+                $lines[] = '   🔢 '.$qty.' '.$unit.' — *sob consulta*';
             }
 
-            $lines[] = "   \u{1F517} ".route('products.show', $product);
+            $lines[] = '   🔗 '.route('products.show', $product);
             $lines[] = '';
         }
 
-        $lines[] = '━━━━━━━━━━━━━━━';
-        $subtotalLine = "\u{1F4B0} *Subtotal: ".format_brl($subtotal)."*";
+        $lines[] = '────────────────────────';
+        $subtotalLine = '💰 *Subtotal: '.format_brl($subtotal).'*';
         if ($hasConsulta) {
             $subtotalLine .= ' _(itens sob consulta não inclusos)_';
         }
@@ -274,7 +274,7 @@ class CartController extends Controller
 
         if (! empty($freight['options'])) {
             $lines[] = '';
-            $freightTitle = "\u{1F69A} *FRETE*";
+            $freightTitle = '🚚 *FRETE*';
             if ($freightCep) {
                 $freightTitle .= ' (CEP '.$freightCep.')';
             }
@@ -283,14 +283,13 @@ class CartController extends Controller
             $totalLines = [];
             foreach ($freight['options'] as $option) {
                 $icon = match ($option['method']) {
-                    'retirada' => "\u{1F3EC}",
-                    'entrega_propria' => "\u{1F69B}",
-                    'transportadora' => "\u{1F4E6}",
-                    default => "\u{1F4AC}",
+                    'retirada' => '🏬',
+                    'entrega_propria' => '🚛',
+                    'transportadora' => '📦',
+                    default => '💬',
                 };
 
                 if ($option['cost'] === null) {
-                    // O label já descreve "sob consulta" — não repete o custo.
                     $line = '   '.$icon.' '.$option['label'];
                 } else {
                     $cost = $option['cost'] == 0.0 ? 'Grátis' : format_brl($option['cost']);
@@ -306,26 +305,26 @@ class CartController extends Controller
 
             if (! empty($totalLines)) {
                 $lines[] = '';
-                $lines[] = "\u{2705} *TOTAL COM ENTREGA*";
+                $lines[] = '✅ *TOTAL COM ENTREGA*';
                 array_push($lines, ...$totalLines);
             }
         }
 
         if (($data['payment_method'] ?? 'whatsapp') === 'boleto') {
             $lines[] = '';
-            $lines[] = "\u{1F4B3} *Pagamento:* Boleto (ficha cadastral aprovada) — prazo a confirmar pela equipe.";
+            $lines[] = '💳 *Pagamento:* Boleto (ficha cadastral aprovada) — prazo a confirmar pela equipe.';
         }
 
         $lines[] = '';
-        $lines[] = '━━━━━━━━━━━━━━━';
+        $lines[] = '────────────────────────';
         if (! empty($data['name'])) {
-            $lines[] = "\u{1F464} Nome: ".$data['name'];
+            $lines[] = '👤 *Nome:* '.$data['name'];
         }
         if (! empty($data['city'])) {
-            $lines[] = "\u{1F4CD} Cidade: ".$data['city'];
+            $lines[] = '📍 *Cidade:* '.$data['city'];
         }
         if (! empty($data['phone'])) {
-            $lines[] = "\u{1F4F1} Contato: ".$data['phone'];
+            $lines[] = '📱 *Contato:* '.$data['phone'];
         }
 
         $lines[] = '';

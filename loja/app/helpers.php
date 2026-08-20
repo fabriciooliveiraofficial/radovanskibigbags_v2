@@ -10,7 +10,7 @@ if (! function_exists('store_setting')) {
 }
 
 if (! function_exists('store_whatsapp_link')) {
-    /** Link wa.me para o WhatsApp da loja com mensagem opcional */
+    /** Link oficial para o WhatsApp da loja com mensagem opcional */
     function store_whatsapp_link(string $message = ''): string
     {
         $phone = preg_replace('/\D/', '', (string) Setting::get('store_whatsapp', ''));
@@ -19,9 +19,9 @@ if (! function_exists('store_whatsapp_link')) {
             $phone = '55'.$phone;
         }
 
-        $url = 'https://wa.me/'.$phone;
+        $url = 'https://api.whatsapp.com/send?phone='.$phone;
 
-        return $message !== '' ? $url.'?text='.rawurlencode($message) : $url;
+        return $message !== '' ? $url.'&text='.rawurlencode($message) : $url;
     }
 }
 

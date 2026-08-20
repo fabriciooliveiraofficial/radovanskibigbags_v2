@@ -109,7 +109,7 @@ class StoreSmokeTest extends TestCase
         // Envia para WhatsApp: registra QuoteRequest e redireciona para wa.me
         $response = $this->post('/cotacao/whatsapp', ['name' => 'João', 'city' => 'Curitiba']);
         $response->assertRedirect();
-        $this->assertStringStartsWith('https://wa.me/5541999999999', $response->headers->get('Location'));
+        $this->assertStringStartsWith('https://api.whatsapp.com/send?phone=5541999999999', $response->headers->get('Location'));
         $this->assertDatabaseHas('quote_requests', ['name' => 'João', 'city' => 'Curitiba']);
 
         // Carrinho limpo após envio
